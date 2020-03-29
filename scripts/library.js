@@ -8,9 +8,9 @@ const _body={
     for(var j=0;j<entity.getRecipes().input[i].length-1;j++){
       if(entity.getRecipes().input[i][j]!=null){
         if(j!=entity.getRecipes().input[i].length-2){
-          vs[j]=entity.items.get(entity.getRecipes().input[i][j].item)<entity.getRecipes().input[i][j].amount;
+          vs[j]=entity.items.get(Vars.content.getByName(ContentType.item,entity.getRecipes().input[i][j][0]))<entity.getRecipes().input[i][j][1];
         }else{
-          vs[j]=entity.liquids.get(entity.getRecipes().input[i][j].liquid)<entity.getRecipes().input[i][j].amount;
+          vs[j]=entity.liquids.get(Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[i][j][0]))<entity.getRecipes().input[i][j][1];
         }
         bs|=vs[j];
       }
@@ -25,9 +25,9 @@ const _body={
     for(var j=0;j<entity.getRecipes().output[i].length-1;j++){
       if(entity.getRecipes().output[i][j]!=null){
         if(j!=entity.getRecipes().output[i].length-2){
-          vs_[j]=entity.items.get(entity.getRecipes().output[i][j].item)>this.itemCapacity-entity.getRecipes().output[i][j].amount;
+          vs_[j]=entity.items.get(Vars.content.getByName(ContentType.item,entity.getRecipes().output[i][j][0]))>this.itemCapacity-entity.getRecipes().output[i][j][1];
         }else{
-          vs_[j]=entity.liquids.get(entity.getRecipes().output[i][j].liquid)>this.liquidCapacity-entity.getRecipes().output[i][j].amount;
+          vs_[j]=entity.liquids.get(Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[i][j][0]))>this.liquidCapacity-entity.getRecipes().output[i][j][1];
         }
         bs_|=vs_[j];
       }
@@ -40,7 +40,7 @@ const _body={
     if(entity.getToggle()==i){
       if(this.checkoutput(tile,i)){
         return false;
-      }else if(entity.getRecipes().output[i][entity.getRecipes().output[i].length-2]!=null&&entity.liquids.get(entity.getRecipes().output[i][entity.getRecipes().output[i].length-2].liquid)>=this.liquidCapacity-0.001){
+      }else if(entity.getRecipes().output[i][entity.getRecipes().output[i].length-2]!=null&&entity.liquids.get(Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[i][entity.getRecipes().output[i].length-2][0]))>=this.liquidCapacity-0.001){
         return false;
       }else if(this.checkinput(tile,i)){
         return false;
@@ -83,7 +83,7 @@ const _body={
     for(var i=0;i<entity.getRecipes().input.length;i++){
       for(var j=0;j<entity.getRecipes().input[i].length-2;j++){
         if(entity.getRecipes().input[i][j]!=null){
-          _bs|=item==entity.getRecipes().input[i][j].item?true:false;
+          _bs|=item==Vars.content.getByName(ContentType.item,entity.getRecipes().input[i][j][0])?true:false;
         }
       }
     }
@@ -95,7 +95,7 @@ const _body={
     var _Bs=false;
     for(var i=0;i<entity.getRecipes().input.length;i++){
       if(entity.getToggle()==i&&entity.getRecipes().input[i][entity.getRecipes().input[i].length-2]!=null){
-        _Bs|=liquid==entity.getRecipes().input[i][entity.getRecipes().input[i].length-2].liquid?true:false;
+        _Bs|=liquid==Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[i][entity.getRecipes().input[i].length-2][0])?true:false;
       }
     }
 
@@ -109,17 +109,17 @@ const _body={
       for(var j=0;j<entity.getRecipes().input[i].length-1;j++){
         var image=new MultiReqImage();
         if(entity.getRecipes().input[i][j]!=null&&j!=entity.getRecipes().input[i].length-2){
-          Vars.content.items().each(boolf(k=>k==entity.getRecipes().input[i][j].item),cons((item)=>{
-            var m1=entity.getRecipes().input[i][j].amount;
-            image.add(new ReqImage(new ItemImage(item.icon(Cicon.medium),entity.getRecipes().input[i][j].amount),boolp(()=>entity!=null&&entity.items.has(item,m1)&&entity.items!=null)));
+          Vars.content.items().each(boolf(k=>k==Vars.content.getByName(ContentType.item,entity.getRecipes().input[i][j][0])),cons((item)=>{
+            var m1=entity.getRecipes().input[i][j][1];
+            image.add(new ReqImage(new ItemImage(item.icon(Cicon.medium),entity.getRecipes().input[i][j][1]),boolp(()=>entity!=null&&entity.items.has(item,m1)&&entity.items!=null)));
           }));
 
           table.add(image).size(8*4);
         }else if(entity.getRecipes().input[i][j]!=null){
-          Vars.content.liquids().each(boolf(k=>k==entity.getRecipes().input[i][j].liquid),cons((liquid)=>{
-            var m2=entity.getRecipes().input[i][j].amount;
-            var m3=entity.getRecipes().input[i][j].liquid;
-            image.add(new ReqImage(new ItemImage(liquid.icon(Cicon.medium),entity.getRecipes().input[i][j].amount),boolp(()=>entity!=null&&entity.liquids.get(m3)>m2&&entity.items!=null)));
+          Vars.content.liquids().each(boolf(k=>k==Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[i][j][0])),cons((liquid)=>{
+            var m2=entity.getRecipes().input[i][j][1];
+            var m3=Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[i][j][0]);
+            image.add(new ReqImage(new ItemImage(liquid.icon(Cicon.medium),entity.getRecipes().input[i][j][1]),boolp(()=>entity!=null&&entity.liquids.get(m3)>m2&&entity.items!=null)));
           }));
           table.add(image).size(8*4);
         }
@@ -131,6 +131,18 @@ const _body={
         table.row();
       }
     }
+  },
+  //show current amount of items and poweroutput
+  setBars(){
+    this.super$setBars();
+    this.bars.remove("items");
+    this.bars.add("items",func(entity=>
+      new Bar(prov(()=>Core.bundle.format("bar.items",entity.tile.entity.getItemStat().join('/')
+    )),prov(()=>Pal.items),floatp(()=>entity.items.total()/(this.itemCapacity*this.findOverlapped(entity.tile,true,false))))
+    ));
+    this.bars.add("poweroutput",func(entity=>
+      new Bar(prov(()=>Core.bundle.format("bar.poweroutput",entity.block.getPowerProduction(entity.tile)*60)),prov(()=>Pal.powerBar),floatp(()=>entity.tile.entity!=null?entity.tile.entity.getPowerStat():0))
+    ));
   },
   //progress
   getProgressIncrease(entity,baseTime){
@@ -170,7 +182,7 @@ const _body={
     for(var j=0;j<entity.getRecipes().output.length;j++){
       for(var jj=0;jj<entity.getRecipes().output[j].length-2;jj++){
         if(entity.getRecipes().output[j][jj]!=null){
-          overlapped[index]=entity.getRecipes().output[j][jj].item;
+          overlapped[index]=Vars.content.getByName(ContentType.item,entity.getRecipes().output[j][jj][0]);
           n+=1;
           index++;
         }
@@ -179,7 +191,7 @@ const _body={
     for(var i=0;i<entity.getRecipes().input.length;i++){
       for(var ii=0;ii<entity.getRecipes().input[i].length-2;ii++){
         if(entity.getRecipes().input[i][ii]!=null){
-          overlapped[index]=entity.getRecipes().input[i][ii].item;
+          overlapped[index]=Vars.content.getByName(ContentType.item,entity.getRecipes().input[i][ii][0]);
           n+=1;
           index++;
         }
@@ -226,23 +238,23 @@ const _body={
       if(entity.progress>=1){
         for(var k=0;k<entity.getRecipes().input[0].length-2;k++){
           if(entity.getRecipes().input[0][k]!=null){
-            entity.items.remove(entity.getRecipes().input[0][k]);
+            entity.items.remove(ItemStack(Vars.content.getByName(ContentType.item,entity.getRecipes().input[0][k][0]),entity.getRecipes().input[0][k][1]));
           }
         }
         if(entity.getRecipes().input[0][entity.getRecipes().input[0].length-2]!=null){
-          entity.liquids.remove(entity.getRecipes().input[0][entity.getRecipes().input[0].length-2].liquid,entity.getRecipes().input[0][entity.getRecipes().input[0].length-2].amount);
+          entity.liquids.remove(Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[0][entity.getRecipes().input[0].length-2][0]),entity.getRecipes().input[0][entity.getRecipes().input[0].length-2][1]);
         }
         for(var a=0;a<entity.getRecipes().output[0].length-2;a++){
           if(entity.getRecipes().output[0][a]!=null){
-            this.useContent(tile,entity.getRecipes().output[0][a].item);
-            for(var aa=0;aa<entity.getRecipes().output[0][a].amount;aa++){
-              this.offloadNear(tile,entity.getRecipes().output[0][a].item);
+            this.useContent(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[0][a][0]));
+            for(var aa=0;aa<entity.getRecipes().output[0][a][1];aa++){
+              this.offloadNear(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[0][a][0]));
             }
           }
         }
         if(entity.getRecipes().output[0][entity.getRecipes().output[0].length-2]!=null){
-          this.useContent(tile,entity.getRecipes().output[0][entity.getRecipes().output[0].length-2].liquid);
-          this.handleLiquid(tile,tile,entity.getRecipes().output[0][entity.getRecipes().output[0].length-2].liquid,entity.getRecipes().output[0][entity.getRecipes().output[0].length-2].amount);
+          this.useContent(tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[0][entity.getRecipes().output[0].length-2][0]));
+          this.handleLiquid(tile,tile,Vars.content.getByName(ContentType.lqiuid,entity.getRecipes().output[0][entity.getRecipes().output[0].length-2][0]),entity.getRecipes().output[0][entity.getRecipes().output[0].length-2][1]);
         }
 
         Effects.effect(this.craftEffect,tile.drawx(),tile.drawy());
@@ -254,24 +266,24 @@ const _body={
       if(entity.progress>=1){
         for(var f=0;f<entity.getRecipes().input[1].length-2;f++){
           if(entity.getRecipes().input[1][f]!=null){
-            entity.items.remove(entity.getRecipes().input[1][f]);
+            entity.items.remove(ItemStack(Vars.content.getByName(ContentType.item,entity.getRecipes().input[1][f][0]),entity.getRecipes().input[1][f][1]));
           }
         }
         if(entity.getRecipes().input[1][entity.getRecipes().input[1].length-2]!=null){
-          entity.liquids.remove(entity.getRecipes().input[1][entity.getRecipes().input[1].length-2].liquid,entity.getRecipes().input[1][entity.getRecipes().input[1].length-2].amount);
+          entity.liquids.remove(Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[1][entity.getRecipes().input[1].length-2][0]),entity.getRecipes().input[1][entity.getRecipes().input[1].length-2][1]);
         }
         for(var bb=0;bb<entity.getRecipes().output[1].length-2;bb++){
           if(entity.getRecipes().output[1][bb]!=null){
-            this.useContent(tile,entity.getRecipes().output[1][bb].item);
-            for(var aa=0;aa<entity.getRecipes().output[1][bb].amount;aa++){
-              this.offloadNear(tile,entity.getRecipes().output[1][bb].item);
+            this.useContent(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[1][bb][0]));
+            for(var aa=0;aa<entity.getRecipes().output[1][bb][1];aa++){
+              this.offloadNear(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[1][bb][0]));
             }
           }
         }
 
         if(entity.getRecipes().output[1][entity.getRecipes().output[1].length-2]!=null){
-          this.useContent(tile,entity.getRecipes().output[1][entity.getRecipes().output[1].length-2].liquid);
-          this.handleLiquid(tile,tile,entity.getRecipes().output[1][entity.getRecipes().output[1].length-2].liquid,entity.getRecipes().output[1][entity.getRecipes().output[1].length-2].amount);
+          this.useContent(tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[1][entity.getRecipes().output[1].length-2][0]));
+          this.handleLiquid(tile,tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[1][entity.getRecipes().output[1].length-2][0]),entity.getRecipes().output[1][entity.getRecipes().output[1].length-2][1]);
         }
 
         Effects.effect(this.craftEffect,tile.drawx(),tile.drawy());
@@ -282,24 +294,24 @@ const _body={
       if(entity.progress>=1){
         for(var c=0;c<entity.getRecipes().input[2].length-2;c++){
           if(entity.getRecipes().input[2][c]!=null){
-            entity.items.remove(entity.getRecipes().input[2][c]);
+            entity.items.remove(ItemStack(Vars.content.getByName(ContentType.item,entity.getRecipes().input[2][c][0]),entity.getRecipes().input[2][c][1]));
           }
         }
         if(entity.getRecipes().input[2][entity.getRecipes().input[2].length-2]!=null){
-          entity.liquids.remove(entity.getRecipes().input[2][entity.getRecipes().input[2].length-2].liquid,entity.getRecipes().input[2][entity.getRecipes().input[2].length-2].amount);
+          entity.liquids.remove(Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[2][entity.getRecipes().input[2].length-2][0]),entity.getRecipes().input[2][entity.getRecipes().input[2].length-2][1]);
         }
         for(var d=0;d<entity.getRecipes().output[2].length-2;d++){
           if(entity.getRecipes().output[2][d]!=null){
-            this.useContent(tile,entity.getRecipes().output[2][d].item);
-            for(var aa=0;aa<entity.getRecipes().output[2][d].amount;aa++){
-              this.offloadNear(tile,entity.getRecipes().output[2][d].item);
+            this.useContent(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[2][d][0]));
+            for(var aa=0;aa<entity.getRecipes().output[2][d][1];aa++){
+              this.offloadNear(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[2][d][0]));
             }
           }
         }
 
         if(entity.getRecipes().output[2][entity.getRecipes().output[2].length-2]!=null){
-          this.useContent(tile,entity.getRecipes().output[2][entity.getRecipes().output[2].length-2].liquid);
-          this.handleLiquid(tile,tile,entity.getRecipes().output[2][entity.getRecipes().output[2].length-2].liquid,entity.getRecipes().output[2][entity.getRecipes().output[2].length-2].amount);
+          this.useContent(tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[2][entity.getRecipes().output[2].length-2][0]));
+          this.handleLiquid(tile,tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[2][entity.getRecipes().output[2].length-2][0]),entity.getRecipes().output[2][entity.getRecipes().output[2].length-2][1]);
         }
         Effects.effect(this.craftEffect,tile.drawx(),tile.drawy());
         entity.progress=0;
@@ -309,24 +321,24 @@ const _body={
       if(entity.progress>=1){
         for(var c=0;c<entity.getRecipes().input[3].length-2;c++){
           if(entity.getRecipes().input[3][c]!=null){
-            entity.items.remove(entity.getRecipes().input[3][c]);
+            entity.items.remove(ItemStack(Vars.content.getByName(ContentType.item,entity.getRecipes().input[3][c][0]),entity.getRecipes().input[3][c][1]));
           }
         }
         if(entity.getRecipes().input[3][entity.getRecipes().input[3].length-2]!=null){
-          entity.liquids.remove(entity.getRecipes().input[3][entity.getRecipes().input[3].length-2].liquid,entity.getRecipes().input[3][entity.getRecipes().input[3].length-2].amount);
+          entity.liquids.remove(Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[3][entity.getRecipes().input[3].length-2][0]),entity.getRecipes().input[3][entity.getRecipes().input[3].length-2][1]);
         }
         for(var d=0;d<entity.getRecipes().output[3].length-2;d++){
           if(entity.getRecipes().output[3][d]!=null){
-            this.useContent(tile,entity.getRecipes().output[3][d].item);
-            for(var aa=0;aa<entity.getRecipes().output[3][d].amount;aa++){
-              this.offloadNear(tile,entity.getRecipes().output[3][d].item);
+            this.useContent(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[3][d][0]));
+            for(var aa=0;aa<entity.getRecipes().output[3][d][1];aa++){
+              this.offloadNear(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[3][d][0]));
             }
           }
         }
 
         if(entity.getRecipes().output[3][entity.getRecipes().output[3].length-2]!=null){
-          this.useContent(tile,entity.getRecipes().output[3][entity.getRecipes().output[3].length-2].liquid);
-          this.handleLiquid(tile,tile,entity.getRecipes().output[3][entity.getRecipes().output[3].length-2].liquid,entity.getRecipes().output[3][entity.getRecipes().output[3].length-2].amount);
+          this.useContent(tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[3][entity.getRecipes().output[3].length-2][0]));
+          this.handleLiquid(tile,tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[3][entity.getRecipes().output[3].length-2][0]),entity.getRecipes().output[3][entity.getRecipes().output[3].length-2][1]);
         }
         Effects.effect(this.craftEffect,tile.drawx(),tile.drawy());
         entity.progress=0;
@@ -336,24 +348,24 @@ const _body={
       if(entity.progress>=1){
         for(var c=0;c<entity.getRecipes().input[4].length-2;c++){
           if(entity.getRecipes().input[4][c]!=null){
-            entity.items.remove(entity.getRecipes().input[4][c]);
+            entity.items.remove(ItemStack(Vars.content.getByName(ContentType.item,entity.getRecipes().input[4][c][0]),entity.getRecipes().input[4][c][1]));
           }
         }
         if(entity.getRecipes().input[4][entity.getRecipes().input[4].length-2]!=null){
-          entity.liquids.remove(entity.getRecipes().input[4][entity.getRecipes().input[4].length-2].liquid,entity.getRecipes().input[4][entity.getRecipes().input[4].length-2].amount);
+          entity.liquids.remove(Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[4][entity.getRecipes().input[4].length-2][0]),entity.getRecipes().input[4][entity.getRecipes().input[4].length-2][1]);
         }
         for(var d=0;d<entity.getRecipes().output[4].length-2;d++){
           if(entity.getRecipes().output[4][d]!=null){
-            this.useContent(tile,entity.getRecipes().output[4][d].item);
-            for(var aa=0;aa<entity.getRecipes().output[4][d].amount;aa++){
-              this.offloadNear(tile,entity.getRecipes().output[4][d].item);
+            this.useContent(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[4][d][0]));
+            for(var aa=0;aa<entity.getRecipes().output[4][d][1];aa++){
+              this.offloadNear(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[4][d][0]));
             }
           }
         }
 
         if(entity.getRecipes().output[4][entity.getRecipes().output[4].length-2]!=null){
-          this.useContent(tile,entity.getRecipes().output[4][entity.getRecipes().output[4].length-2].liquid);
-          this.handleLiquid(tile,tile,entity.getRecipes().output[4][entity.getRecipes().output[4].length-2].liquid,entity.getRecipes().output[4][entity.getRecipes().output[4].length-2].amount);
+          this.useContent(tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[4][entity.getRecipes().output[4].length-2][0]));
+          this.handleLiquid(tile,tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[4][entity.getRecipes().output[4].length-2][0]),entity.getRecipes().output[4][entity.getRecipes().output[4].length-2][1]);
         }
         Effects.effect(this.craftEffect,tile.drawx(),tile.drawy());
         entity.progress=0;
@@ -363,24 +375,24 @@ const _body={
       if(entity.progress>=1){
         for(var c=0;c<entity.getRecipes().input[5].length-2;c++){
           if(entity.getRecipes().input[5][c]!=null){
-            entity.items.remove(entity.getRecipes().input[5][c]);
+            entity.items.remove(ItemStack(Vars.content.getByName(ContentType.item,entity.getRecipes().input[5][c][0]),entity.getRecipes().input[5][c][1]));
           }
         }
         if(entity.getRecipes().input[5][entity.getRecipes().input[5].length-2]!=null){
-          entity.liquids.remove(entity.getRecipes().input[5][entity.getRecipes().input[5].length-2].liquid,entity.getRecipes().input[5][entity.getRecipes().input[5].length-2].amount);
+          entity.liquids.remove(Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[5][entity.getRecipes().input[5].length-2][0]),entity.getRecipes().input[5][entity.getRecipes().input[5].length-2][1]);
         }
         for(var d=0;d<entity.getRecipes().output[5].length-2;d++){
           if(entity.getRecipes().output[5][d]!=null){
-            this.useContent(tile,entity.getRecipes().output[5][d].item);
-            for(var aa=0;aa<entity.getRecipes().output[5][d].amount;aa++){
-              this.offloadNear(tile,entity.getRecipes().output[5][d].item);
+            this.useContent(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[5][d][0]));
+            for(var aa=0;aa<entity.getRecipes().output[5][d][1];aa++){
+              this.offloadNear(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[5][d][0]));
             }
           }
         }
 
         if(entity.getRecipes().output[5][entity.getRecipes().output[5].length-2]!=null){
-          this.useContent(tile,entity.getRecipes().output[5][entity.getRecipes().output[5].length-2].liquid);
-          this.handleLiquid(tile,tile,entity.getRecipes().output[5][entity.getRecipes().output[5].length-2].liquid,entity.getRecipes().output[5][entity.getRecipes().output[5].length-2].amount);
+          this.useContent(tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[5][entity.getRecipes().output[5].length-2][0]));
+          this.handleLiquid(tile,tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[5][entity.getRecipes().output[5].length-2][0]),entity.getRecipes().output[5][entity.getRecipes().output[5].length-2][1]);
         }
         Effects.effect(this.craftEffect,tile.drawx(),tile.drawy());
         entity.progress=0;
@@ -390,24 +402,24 @@ const _body={
       if(entity.progress>=1){
         for(var c=0;c<entity.getRecipes().input[6].length-2;c++){
           if(entity.getRecipes().input[6][c]!=null){
-            entity.items.remove(entity.getRecipes().input[6][c]);
+            entity.items.remove(ItemStack(Vars.content.getByName(ContentType.item,entity.getRecipes().input[6][c][0]),entity.getRecipes().input[6][c][1]));
           }
         }
         if(entity.getRecipes().input[6][entity.getRecipes().input[6].length-2]!=null){
-          entity.liquids.remove(entity.getRecipes().input[6][entity.getRecipes().input[6].length-2].liquid,entity.getRecipes().input[6][entity.getRecipes().input[6].length-2].amount);
+          entity.liquids.remove(Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[6][entity.getRecipes().input[6].length-2][0]),entity.getRecipes().input[6][entity.getRecipes().input[6].length-2][1]);
         }
         for(var d=0;d<entity.getRecipes().output[6].length-2;d++){
           if(entity.getRecipes().output[6][d]!=null){
-            this.useContent(tile,entity.getRecipes().output[6][d].item);
-            for(var aa=0;aa<entity.getRecipes().output[6][d].amount;aa++){
-              this.offloadNear(tile,entity.getRecipes().output[6][d].item);
+            this.useContent(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[6][d][0]));
+            for(var aa=0;aa<entity.getRecipes().output[6][d][1];aa++){
+              this.offloadNear(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[6][d][0]));
             }
           }
         }
 
         if(entity.getRecipes().output[6][entity.getRecipes().output[6].length-2]!=null){
-          this.useContent(tile,entity.getRecipes().output[6][entity.getRecipes().output[6].length-2].liquid);
-          this.handleLiquid(tile,tile,entity.getRecipes().output[6][entity.getRecipes().output[6].length-2].liquid,entity.getRecipes().output[6][entity.getRecipes().output[6].length-2].amount);
+          this.useContent(tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[6][entity.getRecipes().output[6].length-2][0]));
+          this.handleLiquid(tile,tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[6][entity.getRecipes().output[6].length-2][0]),entity.getRecipes().output[6][entity.getRecipes().output[6].length-2][1]);
         }
         Effects.effect(this.craftEffect,tile.drawx(),tile.drawy());
         entity.progress=0;
@@ -417,24 +429,24 @@ const _body={
       if(entity.progress>=1){
         for(var c=0;c<entity.getRecipes().input[7].length-2;c++){
           if(entity.getRecipes().input[7][c]!=null){
-            entity.items.remove(entity.getRecipes().input[7][c]);
+            entity.items.remove(ItemStack(Vars.content.getByName(ContentType.item,entity.getRecipes().input[7][c][0]),entity.getRecipes().input[7][c][1]));
           }
         }
         if(entity.getRecipes().input[7][entity.getRecipes().input[7].length-2]!=null){
-          entity.liquids.remove(entity.getRecipes().input[7][entity.getRecipes().input[7].length-2].liquid,entity.getRecipes().input[7][entity.getRecipes().input[7].length-2].amount);
+          entity.liquids.remove(Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[7][entity.getRecipes().input[7].length-2][0]),entity.getRecipes().input[7][entity.getRecipes().input[7].length-2][1]);
         }
         for(var d=0;d<entity.getRecipes().output[7].length-2;d++){
           if(entity.getRecipes().output[7][d]!=null){
-            this.useContent(tile,entity.getRecipes().output[7][d].item);
-            for(var aa=0;aa<entity.getRecipes().output[7][d].amount;aa++){
-              this.offloadNear(tile,entity.getRecipes().output[7][d].item);
+            this.useContent(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[7][d][0]));
+            for(var aa=0;aa<entity.getRecipes().output[7][d][1];aa++){
+              this.offloadNear(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[7][d][0]));
             }
           }
         }
 
         if(entity.getRecipes().output[7][entity.getRecipes().output[7].length-2]!=null){
-          this.useContent(tile,entity.getRecipes().output[7][entity.getRecipes().output[7].length-2].liquid);
-          this.handleLiquid(tile,tile,entity.getRecipes().output[7][entity.getRecipes().output[7].length-2].liquid,entity.getRecipes().output[7][entity.getRecipes().output[7].length-2].amount);
+          this.useContent(tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[7][entity.getRecipes().output[7].length-2][0]));
+          this.handleLiquid(tile,tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[7][entity.getRecipes().output[7].length-2][0]),entity.getRecipes().output[7][entity.getRecipes().output[7].length-2][1]);
         }
         Effects.effect(this.craftEffect,tile.drawx(),tile.drawy());
         entity.progress=0;
@@ -444,24 +456,24 @@ const _body={
       if(entity.progress>=1){
         for(var c=0;c<entity.getRecipes().input[8].length-2;c++){
           if(entity.getRecipes().input[8][c]!=null){
-            entity.items.remove(entity.getRecipes().input[8][c]);
+            entity.items.remove(ItemStack(Vars.content.getByName(ContentType.item,entity.getRecipes().input[8][c][0]),entity.getRecipes().input[8][c][1]));
           }
         }
         if(entity.getRecipes().input[8][entity.getRecipes().input[8].length-2]!=null){
-          entity.liquids.remove(entity.getRecipes().input[8][entity.getRecipes().input[8].length-2].liquid,entity.getRecipes().input[8][entity.getRecipes().input[8].length-2].amount);
+          entity.liquids.remove(Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[8][entity.getRecipes().input[8].length-2][0]),entity.getRecipes().input[8][entity.getRecipes().input[8].length-2][1]);
         }
         for(var d=0;d<entity.getRecipes().output[8].length-2;d++){
           if(entity.getRecipes().output[8][d]!=null){
-            this.useContent(tile,entity.getRecipes().output[8][d].item);
-            for(var aa=0;aa<entity.getRecipes().output[8][d].amount;aa++){
-              this.offloadNear(tile,entity.getRecipes().output[8][d].item);
+            this.useContent(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[8][d][0]));
+            for(var aa=0;aa<entity.getRecipes().output[8][d][1];aa++){
+              this.offloadNear(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[8][d][0]));
             }
           }
         }
 
         if(entity.getRecipes().output[8][entity.getRecipes().output[8].length-2]!=null){
-          this.useContent(tile,entity.getRecipes().output[8][entity.getRecipes().output[8].length-2].liquid);
-          this.handleLiquid(tile,tile,entity.getRecipes().output[8][entity.getRecipes().output[8].length-2].liquid,entity.getRecipes().output[8][entity.getRecipes().output[8].length-2].amount);
+          this.useContent(tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[8][entity.getRecipes().output[8].length-2][0]));
+          this.handleLiquid(tile,tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[8][entity.getRecipes().output[8].length-2][0]),entity.getRecipes().output[8][entity.getRecipes().output[8].length-2][1]);
         }
         Effects.effect(this.craftEffect,tile.drawx(),tile.drawy());
         entity.progress=0;
@@ -471,24 +483,24 @@ const _body={
       if(entity.progress>=1){
         for(var c=0;c<entity.getRecipes().input[9].length-2;c++){
           if(entity.getRecipes().input[9][c]!=null){
-            entity.items.remove(entity.getRecipes().input[9][c]);
+            entity.items.remove(ItemStack(Vars.content.getByName(ContentType.item,entity.getRecipes().input[9][c][0]),entity.getRecipes().input[9][c][1]));
           }
         }
         if(entity.getRecipes().input[9][entity.getRecipes().input[9].length-2]!=null){
-          entity.liquids.remove(entity.getRecipes().input[9][entity.getRecipes().input[9].length-2].liquid,entity.getRecipes().input[9][entity.getRecipes().input[9].length-2].amount);
+          entity.liquids.remove(Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[9][c][0]),entity.getRecipes().input[9][entity.getRecipes().input[9].length-2][1]);
         }
         for(var d=0;d<entity.getRecipes().output[9].length-2;d++){
           if(entity.getRecipes().output[9][d]!=null){
-            this.useContent(tile,entity.getRecipes().output[9][d].item);
-            for(var aa=0;aa<entity.getRecipes().output[9][d].amount;aa++){
-              this.offloadNear(tile,entity.getRecipes().output[9][d].item);
+            this.useContent(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[9][d][0]));
+            for(var aa=0;aa<entity.getRecipes().output[9][d][1];aa++){
+              this.offloadNear(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[9][d][0]));
             }
           }
         }
 
         if(entity.getRecipes().output[9][entity.getRecipes().output[9].length-2]!=null){
-          this.useContent(tile,entity.getRecipes().output[9][entity.getRecipes().output[9].length-2].liquid);
-          this.handleLiquid(tile,tile,entity.getRecipes().output[9][entity.getRecipes().output[9].length-2].liquid,entity.getRecipes().output[9][entity.getRecipes().output[9].length-2].amount);
+          this.useContent(tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[9][entity.getRecipes().output[9].length-2][0]));
+          this.handleLiquid(tile,tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[9][entity.getRecipes().output[9].length-2][0]),entity.getRecipes().output[9][entity.getRecipes().output[9].length-2][1]);
         }
         Effects.effect(this.craftEffect,tile.drawx(),tile.drawy());
         entity.progress=0;
@@ -503,8 +515,8 @@ const _body={
       if(entity.timer.get(this.timerDump,this.dumpTime)){
         for(var ii=0;ii<entity.getRecipes().output.length;ii++){
           for(var ij=0;ij<entity.getRecipes().output[ii].length-2;ij++){
-            if(entity.getRecipes().output[ii][ij]!=null&&entity.items.get(entity.getRecipes().output[ii][ij].item)>0){
-              this.tryDump(tile,entity.getRecipes().output[ii][ij].item);
+            if(entity.getRecipes().output[ii][ij]!=null&&entity.items.get(Vars.content.getByName(ContentType.item,entity.getRecipes().output[ii][ij][0]))>0){
+              this.tryDump(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[ii][ij][0]));
               _exit=true;
               break;
             }
@@ -515,8 +527,8 @@ const _body={
         }
       }
       for(var jj=0;jj<entity.getRecipes().output.length;jj++){
-        if(entity.getRecipes().output[jj][entity.getRecipes().output[jj].length-2]!=null&&entity.liquids.get(entity.getRecipes().output[jj][entity.getRecipes().output[jj].length-2].liquid)>0.01){
-          this.tryDumpLiquid(tile,entity.getRecipes().output[jj][entity.getRecipes().output[jj].length-2].liquid);
+        if(entity.getRecipes().output[jj][entity.getRecipes().output[jj].length-2]!=null&&entity.liquids.get(Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[jj][entity.getRecipes().output[jj].length-2][0]))>0.01){
+          this.tryDumpLiquid(tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[jj][entity.getRecipes().output[jj].length-2][0]));
           break;
         }
       }
@@ -538,7 +550,7 @@ const _body={
       (function (i,tile){
         var button=table.addImageButton(Tex.whiteui,Styles.clearToggleTransi,40,run(()=>Vars.control.input.frag.config.hideConfig())).group(group).get();
         button.changed(run(()=>tile.configure(button.isChecked()?i:-1)));
-        button.getStyle().imageUp=new TextureRegionDrawable(i!=entity.getRecipes().output.length?entity.getRecipes().output[i][0]!=null?entity.getRecipes().output[i][0].item.icon(Cicon.small):entity.getRecipes().output[i][entity.getRecipes().output[i].length-2]!=null?entity.getRecipes().output[i][entity.getRecipes().output[i].length-2].liquid.icon(Cicon.small):entity.getRecipes().output[i][entity.getRecipes().output[i].length-1]!=null?Icon.power:Icon.cancel:Icon.trash);
+        button.getStyle().imageUp=new TextureRegionDrawable(i!=entity.getRecipes().output.length?entity.getRecipes().output[i][0]!=null?Vars.content.getByName(ContentType.item,entity.getRecipes().output[i][0][0]).icon(Cicon.small):entity.getRecipes().output[i][entity.getRecipes().output[i].length-2]!=null?Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[i][entity.getRecipes().output[i].length-2][0]).icon(Cicon.small):entity.getRecipes().output[i][entity.getRecipes().output[i].length-1]!=null?Icon.power:Icon.cancel:Icon.trash);
         button.update(run(()=>button.setChecked(entity==null?false:entity.getToggle()==i)));
 
       })(i,tile)
@@ -555,7 +567,7 @@ const _body={
     for(var jj=1;jj<max_;jj++){
       for(var kk=0;kk<entity.getRecipes().output.length;kk++){
         if(jj!=entity.getRecipes().output[kk].length-2&&jj!=entity.getRecipes().output[kk].length-1){
-          table.addImage(entity.getRecipes().output[kk][jj]==null?Tex.clear:entity.getRecipes().output[kk][jj].item.icon(Cicon.small));
+          table.addImage(entity.getRecipes().output[kk][jj]==null?Tex.clear:Vars.content.getByName(ContentType.item,entity.getRecipes().output[kk][jj][0]).icon(Cicon.small));
         }else{
           table.addImage(Tex.clear);
         }
@@ -569,7 +581,7 @@ const _body={
           null1&=false;
         }
       }
-      table.addImage(entity.getRecipes().output[j][entity.getRecipes().output[j].length-2]==null||null1?Tex.clear:entity.getRecipes().output[j][entity.getRecipes().output[j].length-2].liquid.icon(Cicon.small));
+      table.addImage(entity.getRecipes().output[j][entity.getRecipes().output[j].length-2]==null||null1?Tex.clear:Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[j][entity.getRecipes().output[j].length-2][0]).icon(Cicon.small));
     }
     table.row();
     for(var k=0;k<entity.getRecipes().output.length;k++){
