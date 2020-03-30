@@ -211,10 +211,36 @@ const _body={
       return overLapped;
     }
   },
+  customProd(tile,i){
+    const entity=tile.ent();
+    for(var k=0;k<entity.getRecipes().input[i].length-2;k++){
+      if(entity.getRecipes().input[i][k]!=null){
+        entity.items.remove(ItemStack(Vars.content.getByName(ContentType.item,entity.getRecipes().input[i][k][0]),entity.getRecipes().input[i][k][1]));
+      }
+    }
+    if(entity.getRecipes().input[i][entity.getRecipes().input[i].length-2]!=null){
+      entity.liquids.remove(Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[i][entity.getRecipes().input[i].length-2][0]),entity.getRecipes().input[i][entity.getRecipes().input[i].length-2][1]);
+    }
+    for(var a=0;a<entity.getRecipes().output[i].length-2;a++){
+      if(entity.getRecipes().output[i][a]!=null){
+        this.useContent(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[i][a][0]));
+        for(var aa=0;aa<entity.getRecipes().output[i][a][1];aa++){
+          this.offloadNear(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[i][a][0]));
+        }
+      }
+    }
+    if(entity.getRecipes().output[i][entity.getRecipes().output[i].length-2]!=null){
+      this.useContent(tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[i][entity.getRecipes().output[i].length-2][0]));
+      this.handleLiquid(tile,tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[i][entity.getRecipes().output[i].length-2][0]),entity.getRecipes().output[i][entity.getRecipes().output[i].length-2][1]);
+    }
+
+    Effects.effect(this.craftEffect,tile.drawx(),tile.drawy());
+    entity.progress=0;
+  },
   /*semi-automatic
   limited 10 recipes. but you can extend using copy-paste each else if part and change number ex)input.[9]->input.[10]
   I know. It seems to be optimizable using loop.
-  but outputs output[0] only. Idk why.
+  but outputs output[i] only. Idk why.
   */
   update(tile){
     const entity=tile.ent();
@@ -233,283 +259,18 @@ const _body={
     if(!entity.getCond()){
       entity.modifyPowerStat(0);
     }
-    if(entity.getToggle()==0&&entity.getToggle()<entity.getRecipes().input.length){
-      this.customCons(tile,0);
-      if(entity.progress>=1){
-        for(var k=0;k<entity.getRecipes().input[0].length-2;k++){
-          if(entity.getRecipes().input[0][k]!=null){
-            entity.items.remove(ItemStack(Vars.content.getByName(ContentType.item,entity.getRecipes().input[0][k][0]),entity.getRecipes().input[0][k][1]));
-          }
+    for(var z=0;z<entity.getRecipes().input.length;z++){
+      if(entity.getToggle()==z){
+        this.customCons(tile,z);
+        if(entity.getToggle()==z&&entity.progress>=1){
+          this.customProd(tile,z);
         }
-        if(entity.getRecipes().input[0][entity.getRecipes().input[0].length-2]!=null){
-          entity.liquids.remove(Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[0][entity.getRecipes().input[0].length-2][0]),entity.getRecipes().input[0][entity.getRecipes().input[0].length-2][1]);
-        }
-        for(var a=0;a<entity.getRecipes().output[0].length-2;a++){
-          if(entity.getRecipes().output[0][a]!=null){
-            this.useContent(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[0][a][0]));
-            for(var aa=0;aa<entity.getRecipes().output[0][a][1];aa++){
-              this.offloadNear(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[0][a][0]));
-            }
-          }
-        }
-        if(entity.getRecipes().output[0][entity.getRecipes().output[0].length-2]!=null){
-          this.useContent(tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[0][entity.getRecipes().output[0].length-2][0]));
-          this.handleLiquid(tile,tile,Vars.content.getByName(ContentType.lqiuid,entity.getRecipes().output[0][entity.getRecipes().output[0].length-2][0]),entity.getRecipes().output[0][entity.getRecipes().output[0].length-2][1]);
-        }
-
-        Effects.effect(this.craftEffect,tile.drawx(),tile.drawy());
-        entity.progress=0;
-      }
-
-    }else if(entity.getToggle()==1&&entity.getToggle()<entity.getRecipes().input.length){
-      this.customCons(tile,1);
-      if(entity.progress>=1){
-        for(var f=0;f<entity.getRecipes().input[1].length-2;f++){
-          if(entity.getRecipes().input[1][f]!=null){
-            entity.items.remove(ItemStack(Vars.content.getByName(ContentType.item,entity.getRecipes().input[1][f][0]),entity.getRecipes().input[1][f][1]));
-          }
-        }
-        if(entity.getRecipes().input[1][entity.getRecipes().input[1].length-2]!=null){
-          entity.liquids.remove(Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[1][entity.getRecipes().input[1].length-2][0]),entity.getRecipes().input[1][entity.getRecipes().input[1].length-2][1]);
-        }
-        for(var bb=0;bb<entity.getRecipes().output[1].length-2;bb++){
-          if(entity.getRecipes().output[1][bb]!=null){
-            this.useContent(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[1][bb][0]));
-            for(var aa=0;aa<entity.getRecipes().output[1][bb][1];aa++){
-              this.offloadNear(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[1][bb][0]));
-            }
-          }
-        }
-
-        if(entity.getRecipes().output[1][entity.getRecipes().output[1].length-2]!=null){
-          this.useContent(tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[1][entity.getRecipes().output[1].length-2][0]));
-          this.handleLiquid(tile,tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[1][entity.getRecipes().output[1].length-2][0]),entity.getRecipes().output[1][entity.getRecipes().output[1].length-2][1]);
-        }
-
-        Effects.effect(this.craftEffect,tile.drawx(),tile.drawy());
-        entity.progress=0;
-      }
-    }else if(entity.getToggle()==2&&entity.getToggle()<entity.getRecipes().input.length){
-      this.customCons(tile,2);
-      if(entity.progress>=1){
-        for(var c=0;c<entity.getRecipes().input[2].length-2;c++){
-          if(entity.getRecipes().input[2][c]!=null){
-            entity.items.remove(ItemStack(Vars.content.getByName(ContentType.item,entity.getRecipes().input[2][c][0]),entity.getRecipes().input[2][c][1]));
-          }
-        }
-        if(entity.getRecipes().input[2][entity.getRecipes().input[2].length-2]!=null){
-          entity.liquids.remove(Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[2][entity.getRecipes().input[2].length-2][0]),entity.getRecipes().input[2][entity.getRecipes().input[2].length-2][1]);
-        }
-        for(var d=0;d<entity.getRecipes().output[2].length-2;d++){
-          if(entity.getRecipes().output[2][d]!=null){
-            this.useContent(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[2][d][0]));
-            for(var aa=0;aa<entity.getRecipes().output[2][d][1];aa++){
-              this.offloadNear(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[2][d][0]));
-            }
-          }
-        }
-
-        if(entity.getRecipes().output[2][entity.getRecipes().output[2].length-2]!=null){
-          this.useContent(tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[2][entity.getRecipes().output[2].length-2][0]));
-          this.handleLiquid(tile,tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[2][entity.getRecipes().output[2].length-2][0]),entity.getRecipes().output[2][entity.getRecipes().output[2].length-2][1]);
-        }
-        Effects.effect(this.craftEffect,tile.drawx(),tile.drawy());
-        entity.progress=0;
-      }
-    }else if(entity.getToggle()==3&&entity.getToggle()<entity.getRecipes().input.length){
-      this.customCons(tile,3);
-      if(entity.progress>=1){
-        for(var c=0;c<entity.getRecipes().input[3].length-2;c++){
-          if(entity.getRecipes().input[3][c]!=null){
-            entity.items.remove(ItemStack(Vars.content.getByName(ContentType.item,entity.getRecipes().input[3][c][0]),entity.getRecipes().input[3][c][1]));
-          }
-        }
-        if(entity.getRecipes().input[3][entity.getRecipes().input[3].length-2]!=null){
-          entity.liquids.remove(Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[3][entity.getRecipes().input[3].length-2][0]),entity.getRecipes().input[3][entity.getRecipes().input[3].length-2][1]);
-        }
-        for(var d=0;d<entity.getRecipes().output[3].length-2;d++){
-          if(entity.getRecipes().output[3][d]!=null){
-            this.useContent(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[3][d][0]));
-            for(var aa=0;aa<entity.getRecipes().output[3][d][1];aa++){
-              this.offloadNear(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[3][d][0]));
-            }
-          }
-        }
-
-        if(entity.getRecipes().output[3][entity.getRecipes().output[3].length-2]!=null){
-          this.useContent(tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[3][entity.getRecipes().output[3].length-2][0]));
-          this.handleLiquid(tile,tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[3][entity.getRecipes().output[3].length-2][0]),entity.getRecipes().output[3][entity.getRecipes().output[3].length-2][1]);
-        }
-        Effects.effect(this.craftEffect,tile.drawx(),tile.drawy());
-        entity.progress=0;
-      }
-    }else if(entity.getToggle()==4&&entity.getToggle()<entity.getRecipes().input.length){
-      this.customCons(tile,4);
-      if(entity.progress>=1){
-        for(var c=0;c<entity.getRecipes().input[4].length-2;c++){
-          if(entity.getRecipes().input[4][c]!=null){
-            entity.items.remove(ItemStack(Vars.content.getByName(ContentType.item,entity.getRecipes().input[4][c][0]),entity.getRecipes().input[4][c][1]));
-          }
-        }
-        if(entity.getRecipes().input[4][entity.getRecipes().input[4].length-2]!=null){
-          entity.liquids.remove(Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[4][entity.getRecipes().input[4].length-2][0]),entity.getRecipes().input[4][entity.getRecipes().input[4].length-2][1]);
-        }
-        for(var d=0;d<entity.getRecipes().output[4].length-2;d++){
-          if(entity.getRecipes().output[4][d]!=null){
-            this.useContent(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[4][d][0]));
-            for(var aa=0;aa<entity.getRecipes().output[4][d][1];aa++){
-              this.offloadNear(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[4][d][0]));
-            }
-          }
-        }
-
-        if(entity.getRecipes().output[4][entity.getRecipes().output[4].length-2]!=null){
-          this.useContent(tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[4][entity.getRecipes().output[4].length-2][0]));
-          this.handleLiquid(tile,tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[4][entity.getRecipes().output[4].length-2][0]),entity.getRecipes().output[4][entity.getRecipes().output[4].length-2][1]);
-        }
-        Effects.effect(this.craftEffect,tile.drawx(),tile.drawy());
-        entity.progress=0;
-      }
-    }else if(entity.getToggle()==5&&entity.getToggle()<entity.getRecipes().input.length){
-      this.customCons(tile,5);
-      if(entity.progress>=1){
-        for(var c=0;c<entity.getRecipes().input[5].length-2;c++){
-          if(entity.getRecipes().input[5][c]!=null){
-            entity.items.remove(ItemStack(Vars.content.getByName(ContentType.item,entity.getRecipes().input[5][c][0]),entity.getRecipes().input[5][c][1]));
-          }
-        }
-        if(entity.getRecipes().input[5][entity.getRecipes().input[5].length-2]!=null){
-          entity.liquids.remove(Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[5][entity.getRecipes().input[5].length-2][0]),entity.getRecipes().input[5][entity.getRecipes().input[5].length-2][1]);
-        }
-        for(var d=0;d<entity.getRecipes().output[5].length-2;d++){
-          if(entity.getRecipes().output[5][d]!=null){
-            this.useContent(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[5][d][0]));
-            for(var aa=0;aa<entity.getRecipes().output[5][d][1];aa++){
-              this.offloadNear(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[5][d][0]));
-            }
-          }
-        }
-
-        if(entity.getRecipes().output[5][entity.getRecipes().output[5].length-2]!=null){
-          this.useContent(tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[5][entity.getRecipes().output[5].length-2][0]));
-          this.handleLiquid(tile,tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[5][entity.getRecipes().output[5].length-2][0]),entity.getRecipes().output[5][entity.getRecipes().output[5].length-2][1]);
-        }
-        Effects.effect(this.craftEffect,tile.drawx(),tile.drawy());
-        entity.progress=0;
-      }
-    }else if(entity.getToggle()==6&&entity.getToggle()<entity.getRecipes().input.length){
-      this.customCons(tile,6);
-      if(entity.progress>=1){
-        for(var c=0;c<entity.getRecipes().input[6].length-2;c++){
-          if(entity.getRecipes().input[6][c]!=null){
-            entity.items.remove(ItemStack(Vars.content.getByName(ContentType.item,entity.getRecipes().input[6][c][0]),entity.getRecipes().input[6][c][1]));
-          }
-        }
-        if(entity.getRecipes().input[6][entity.getRecipes().input[6].length-2]!=null){
-          entity.liquids.remove(Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[6][entity.getRecipes().input[6].length-2][0]),entity.getRecipes().input[6][entity.getRecipes().input[6].length-2][1]);
-        }
-        for(var d=0;d<entity.getRecipes().output[6].length-2;d++){
-          if(entity.getRecipes().output[6][d]!=null){
-            this.useContent(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[6][d][0]));
-            for(var aa=0;aa<entity.getRecipes().output[6][d][1];aa++){
-              this.offloadNear(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[6][d][0]));
-            }
-          }
-        }
-
-        if(entity.getRecipes().output[6][entity.getRecipes().output[6].length-2]!=null){
-          this.useContent(tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[6][entity.getRecipes().output[6].length-2][0]));
-          this.handleLiquid(tile,tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[6][entity.getRecipes().output[6].length-2][0]),entity.getRecipes().output[6][entity.getRecipes().output[6].length-2][1]);
-        }
-        Effects.effect(this.craftEffect,tile.drawx(),tile.drawy());
-        entity.progress=0;
-      }
-    }else if(entity.getToggle()==7&&entity.getToggle()<entity.getRecipes().input.length){
-      this.customCons(tile,7);
-      if(entity.progress>=1){
-        for(var c=0;c<entity.getRecipes().input[7].length-2;c++){
-          if(entity.getRecipes().input[7][c]!=null){
-            entity.items.remove(ItemStack(Vars.content.getByName(ContentType.item,entity.getRecipes().input[7][c][0]),entity.getRecipes().input[7][c][1]));
-          }
-        }
-        if(entity.getRecipes().input[7][entity.getRecipes().input[7].length-2]!=null){
-          entity.liquids.remove(Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[7][entity.getRecipes().input[7].length-2][0]),entity.getRecipes().input[7][entity.getRecipes().input[7].length-2][1]);
-        }
-        for(var d=0;d<entity.getRecipes().output[7].length-2;d++){
-          if(entity.getRecipes().output[7][d]!=null){
-            this.useContent(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[7][d][0]));
-            for(var aa=0;aa<entity.getRecipes().output[7][d][1];aa++){
-              this.offloadNear(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[7][d][0]));
-            }
-          }
-        }
-
-        if(entity.getRecipes().output[7][entity.getRecipes().output[7].length-2]!=null){
-          this.useContent(tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[7][entity.getRecipes().output[7].length-2][0]));
-          this.handleLiquid(tile,tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[7][entity.getRecipes().output[7].length-2][0]),entity.getRecipes().output[7][entity.getRecipes().output[7].length-2][1]);
-        }
-        Effects.effect(this.craftEffect,tile.drawx(),tile.drawy());
-        entity.progress=0;
-      }
-    }else if(entity.getToggle()==8&&entity.getToggle()<entity.getRecipes().input.length){
-      this.customCons(tile,8);
-      if(entity.progress>=1){
-        for(var c=0;c<entity.getRecipes().input[8].length-2;c++){
-          if(entity.getRecipes().input[8][c]!=null){
-            entity.items.remove(ItemStack(Vars.content.getByName(ContentType.item,entity.getRecipes().input[8][c][0]),entity.getRecipes().input[8][c][1]));
-          }
-        }
-        if(entity.getRecipes().input[8][entity.getRecipes().input[8].length-2]!=null){
-          entity.liquids.remove(Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[8][entity.getRecipes().input[8].length-2][0]),entity.getRecipes().input[8][entity.getRecipes().input[8].length-2][1]);
-        }
-        for(var d=0;d<entity.getRecipes().output[8].length-2;d++){
-          if(entity.getRecipes().output[8][d]!=null){
-            this.useContent(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[8][d][0]));
-            for(var aa=0;aa<entity.getRecipes().output[8][d][1];aa++){
-              this.offloadNear(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[8][d][0]));
-            }
-          }
-        }
-
-        if(entity.getRecipes().output[8][entity.getRecipes().output[8].length-2]!=null){
-          this.useContent(tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[8][entity.getRecipes().output[8].length-2][0]));
-          this.handleLiquid(tile,tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[8][entity.getRecipes().output[8].length-2][0]),entity.getRecipes().output[8][entity.getRecipes().output[8].length-2][1]);
-        }
-        Effects.effect(this.craftEffect,tile.drawx(),tile.drawy());
-        entity.progress=0;
-      }
-    }else if(entity.getToggle()==9&&entity.getToggle()<entity.getRecipes().input.length){
-      this.customCons(tile,9);
-      if(entity.progress>=1){
-        for(var c=0;c<entity.getRecipes().input[9].length-2;c++){
-          if(entity.getRecipes().input[9][c]!=null){
-            entity.items.remove(ItemStack(Vars.content.getByName(ContentType.item,entity.getRecipes().input[9][c][0]),entity.getRecipes().input[9][c][1]));
-          }
-        }
-        if(entity.getRecipes().input[9][entity.getRecipes().input[9].length-2]!=null){
-          entity.liquids.remove(Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[9][c][0]),entity.getRecipes().input[9][entity.getRecipes().input[9].length-2][1]);
-        }
-        for(var d=0;d<entity.getRecipes().output[9].length-2;d++){
-          if(entity.getRecipes().output[9][d]!=null){
-            this.useContent(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[9][d][0]));
-            for(var aa=0;aa<entity.getRecipes().output[9][d][1];aa++){
-              this.offloadNear(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[9][d][0]));
-            }
-          }
-        }
-
-        if(entity.getRecipes().output[9][entity.getRecipes().output[9].length-2]!=null){
-          this.useContent(tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[9][entity.getRecipes().output[9].length-2][0]));
-          this.handleLiquid(tile,tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[9][entity.getRecipes().output[9].length-2][0]),entity.getRecipes().output[9][entity.getRecipes().output[9].length-2][1]);
-        }
-        Effects.effect(this.craftEffect,tile.drawx(),tile.drawy());
-        entity.progress=0;
+        break;
       }
     }
 
 
-
-    //아이템 내뱉기
+    //dump
     var _exit=false;
     if(entity.getToggle()!=entity.getRecipes().input.length){
       if(entity.timer.get(this.timerDump,this.dumpTime)){
