@@ -51,7 +51,7 @@ const _body={
       }
     }
   },
-  //custom function supports update()
+  //custom function for progress.supports update(tile)
   customCons(tile,i){
     const entity=tile.ent();
     entity.saveCond(this.checkCond(tile,i));
@@ -211,6 +211,7 @@ const _body={
       return overLapped;
     }
   },
+  //custom function that deals with item and liquid. supports update(tile) 
   customProd(tile,i){
     const entity=tile.ent();
     for(var k=0;k<entity.getRecipes().input[i].length-2;k++){
@@ -237,11 +238,7 @@ const _body={
     Effects.effect(this.craftEffect,tile.drawx(),tile.drawy());
     entity.progress=0;
   },
-  /*semi-automatic
-  limited 10 recipes. but you can extend using copy-paste each else if part and change number ex)input.[9]->input.[10]
-  I know. It seems to be optimizable using loop.
-  but outputs output[i] only. Idk why.
-  */
+  //now optimized. no limit on recipes' length
   update(tile){
     const entity=tile.ent();
     entity.modifyItemStat(this.findOverlapped(tile,false,true));
