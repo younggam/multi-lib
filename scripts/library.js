@@ -51,7 +51,7 @@ const _body={
       }
     }
   },
-  //custom function for progress.supports update(tile)
+  //custom function supports update()
   customCons(tile,i){
     const entity=tile.ent();
     entity.saveCond(this.checkCond(tile,i));
@@ -170,7 +170,7 @@ const _body={
   },
   //check overLapped input and contain some util
   findOverlapped(tile,a,b){
-    if(tile==null){
+    if(!tile.block().hasEntity()){
       return;
     }
     const entity=tile.ent();
@@ -211,7 +211,6 @@ const _body={
       return overLapped;
     }
   },
-  //custom function that deals with item and liquid. supports update(tile) 
   customProd(tile,i){
     const entity=tile.ent();
     for(var k=0;k<entity.getRecipes().input[i].length-2;k++){
@@ -238,7 +237,11 @@ const _body={
     Effects.effect(this.craftEffect,tile.drawx(),tile.drawy());
     entity.progress=0;
   },
-  //now optimized. no limit on recipes' length
+  /*semi-automatic
+  limited 10 recipes. but you can extend using copy-paste each else if part and change number ex)input.[9]->input.[10]
+  I know. It seems to be optimizable using loop.
+  but outputs output[i] only. Idk why.
+  */
   update(tile){
     const entity=tile.ent();
     entity.modifyItemStat(this.findOverlapped(tile,false,true));
@@ -299,17 +302,89 @@ const _body={
       }
     }
   },
+  setCheckButton(a,z,tile){
+    const entity=tile.ent();
+    if(a==-1){
+      return false;
+    }else if(a==entity.getRecipes().output.length&&z==entity.getRecipes().output.length){
+      return true;
+    }else if(a==entity.getRecipes().output.length&&z!=entity.getRecipes().output.length){
+      return false;
+    }
+    var sort=[];
+    for(var i=0;i<entity.getRecipes().output.length;i++){
+      var index=0;
+      if(sort[i]==null){
+        sort[i]=[];
+      }
+      for(var o=0;o<entity.getRecipes().output[i].length;o++){
+        if(entity.getRecipes().output[i][o]!=null){
+          if(Array.isArray(entity.getRecipes().output[i][o])){
+            sort[i][index]=entity.getRecipes().output[i][o].join('');
+          }else{
+            sort[i][index]=entity.getRecipes().output[i][o];
+          }
+          index++;
+        }
+      }
+    }
+    var c=[];
+    for(var k=0;k<sort.length;k++){
+      if(c[k]==null){
+        c[k]=[];
+        for(var p=0;p<sort.length;p++){
+          c[k][p]=true;
+        }
+      }
+      for(var l=0;l<sort[k].length;l++){
+        for(var n=0;n<sort.length;n++){
+          var r=false;
+          for(var q=0;q<sort[n].length;q++){
+            r|=(sort[n][q]==sort[k][l]&&sort[n].length==sort[k].length);
+          }
+          c[k][n]&=r
+        }
+      }
+    }
+    var e=[];
+    for(var m=0;m<sort.length;m++){
+      if(sort[m][0]==null){
+        e[m]=true;
+      }else{
+        e[m]=false;
+      }
+    }
+    for(var m=0;m<sort.length;m++){
+      if(sort[m][0]==null){
+        c[m]=e;
+      }
+    }
+    var d=[];
+    for(var j=0;j<c[a].length;j++){
+      if(c[a][j]==true){
+        d[j]=j;
+      }else{
+        d[j]=-10;
+      }
+    }
+    if(d.includes(z)&&d[z]!=-10&&d[z]!=null){
+      return true;
+    }else{
+      return false;
+    }
+  },
   //pop-up when configured
   buildConfiguration(tile,table){
     const entity=tile.ent();
     var group=new ButtonGroup();
     group.setMinCheckCount(0);
+    group.setMaxCheckCount(-1);
     for(var i=0;i<entity.getRecipes().input.length+1;i++){
       (function (i,tile){
         var button=table.addImageButton(Tex.whiteui,Styles.clearToggleTransi,40,run(()=>Vars.control.input.frag.config.hideConfig())).group(group).get();
         button.changed(run(()=>tile.configure(button.isChecked()?i:-1)));
         button.getStyle().imageUp=new TextureRegionDrawable(i!=entity.getRecipes().output.length?entity.getRecipes().output[i][0]!=null?Vars.content.getByName(ContentType.item,entity.getRecipes().output[i][0][0]).icon(Cicon.small):entity.getRecipes().output[i][entity.getRecipes().output[i].length-2]!=null?Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[i][entity.getRecipes().output[i].length-2][0]).icon(Cicon.small):entity.getRecipes().output[i][entity.getRecipes().output[i].length-1]!=null?Icon.power:Icon.cancel:Icon.trash);
-        button.update(run(()=>button.setChecked(entity==null?false:entity.getToggle()==i)));
+        button.update(run(()=>button.setChecked(!tile.block().hasEntity()?false:tile.block().setCheckButton(entity.getToggle(),i,tile))));
 
       })(i,tile)
     }
