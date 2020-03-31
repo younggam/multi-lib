@@ -237,11 +237,7 @@ const _body={
     Effects.effect(this.craftEffect,tile.drawx(),tile.drawy());
     entity.progress=0;
   },
-  /*semi-automatic
-  limited 10 recipes. but you can extend using copy-paste each else if part and change number ex)input.[9]->input.[10]
-  I know. It seems to be optimizable using loop.
-  but outputs output[i] only. Idk why.
-  */
+  //now optimized. no limit on recipes' length
   update(tile){
     const entity=tile.ent();
     entity.modifyItemStat(this.findOverlapped(tile,false,true));
@@ -302,6 +298,7 @@ const _body={
       }
     }
   },
+  //for button
   setCheckButton(a,z,tile){
     const entity=tile.ent();
     if(a==-1){
