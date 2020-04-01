@@ -299,15 +299,9 @@ const _body={
     }
   },
   //for button
-  setCheckButton(a,z,tile){
+  placed(tile){
+    this.super$placed(tile);
     const entity=tile.ent();
-    if(a==-1){
-      return false;
-    }else if(a==entity.getRecipes().output.length&&z==entity.getRecipes().output.length){
-      return true;
-    }else if(a==entity.getRecipes().output.length&&z!=entity.getRecipes().output.length){
-      return false;
-    }
     var sort=[];
     for(var i=0;i<entity.getRecipes().output.length;i++){
       var index=0;
@@ -356,9 +350,21 @@ const _body={
         c[m]=e;
       }
     }
+    entity.setOutputStat(c);
+  },
+  //for button
+  setCheckButton(a,z,tile){
+    const entity=tile.ent();
+    if(a==-1){
+      return false;
+    }else if(a==entity.getRecipes().output.length&&z==entity.getRecipes().output.length){
+      return true;
+    }else if(a==entity.getRecipes().output.length&&z!=entity.getRecipes().output.length){
+      return false;
+    }
     var d=[];
-    for(var j=0;j<c[a].length;j++){
-      if(c[a][j]==true){
+    for(var j=0;j<entity.getOutputStat()[a].length;j++){
+      if(entity.getOutputStat()[a][j]==true){
         d[j]=j;
       }else{
         d[j]=-10;

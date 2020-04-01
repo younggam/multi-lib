@@ -95,12 +95,19 @@ module.exports={
       getRecipes(){
         return this._recipes;
       },
+      setOutputStat(i){
+        this._outputStat=i;
+      },
+      getOutputStat(){
+        return this._outputStat;
+      },
       _progressArr:[],
       _toggle:0,
       condit:false,
       _powerStat:0,
       _itemStat:[],
-      _recipes:rec
+      _recipes:rec,
+      _outputStat:[]
     }));
     //power request change every recipe
     multi.consumes.add(extend(ConsumePower,{
