@@ -1,5 +1,26 @@
 
 const _body={
+  drawSelect(tile){
+    items=this.findOverlapped(tile,true,true);
+    var index=0;
+    var a=items.length;
+    var c=this.size+2+(this.size+1)%2;
+    for(i=0;i<Math.ceil(a/c);i++){
+      var b=c;
+      if(i==parseInt(a/c)){
+        b=a%c;
+      }
+      for(var j=0;j<b;j++){
+        Draw.rect(items[index].icon(Cicon.xlarge),tile.drawx()-Math.floor(b/2)*8+j*8,tile.drawy()+(this.size+2)*4-8*i,8,8);
+        this.drawPlaceText(tile.entity.getItemStat()[index],tile.x-Math.floor(b/2)+j,tile.y-i,true);
+        index++;
+      }
+    }
+  },
+  drawPlaceText(text,x,y,valid){
+    var dx=x*this.tilesize,dy=y*this.tilesize;
+    this.super$drawPlaceText(text,x,y,valid);
+  },
   //custom function  supports checkCond
   checkinput(tile,i){
     const entity=tile.ent();
@@ -177,6 +198,7 @@ const _body={
     var n=0;
     var overlapped=[];
     var overLapped=[];
+    var divided=[];
     var index=0;
     var index_=0;
     for(var j=0;j<entity.getRecipes().output.length;j++){
@@ -201,11 +223,14 @@ const _body={
       if(overlapped.indexOf(overlapped[k])!=k){
         n-=1;
       }else if(tile!=null){
+        divided[index_]=overlapped[k];
         overLapped[index_]=entity.items.get(overlapped[k]);
         index_++;
       }
     }
-    if(a==true){
+    if(a==true&&b==true){
+      return divided;
+    }else if(a==true){
       return n;
     }else if(b==true){
       return overLapped;
@@ -351,6 +376,7 @@ const _body={
       }
     }
     entity.setOutputStat(c);
+    entity.setSortedStat(sort);
   },
   //for button
   setCheckButton(a,z,tile){
@@ -394,8 +420,8 @@ const _body={
     table.row();
     var _max=[];
     var max_=0;
-    for(var l=0;l<entity.getRecipes().output.length;l++){
-      _max[l]=entity.getRecipes().output[l].length;
+    for(var l=0;l<entity.getSortedStat().length;l++){
+      _max[l]=entity.getSortedStat()[l].length;
     }
     for(var ll=0;ll<_max.length;ll++){
       max_=max_==0?_max[ll]:max_<_max[ll]?_max[ll]:max_;

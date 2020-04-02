@@ -101,13 +101,20 @@ module.exports={
       getOutputStat(){
         return this._outputStat;
       },
+      setSortedStat(j){
+        this._sortedStat=j;
+      },
+      getSortedStat(){
+        return this._sortedStat;
+      },
       _progressArr:[],
       _toggle:0,
       condit:false,
       _powerStat:0,
       _itemStat:[],
       _recipes:rec,
-      _outputStat:[]
+      _outputStat:[],
+      _sortedStat:[]
     }));
     //power request change every recipe
     multi.consumes.add(extend(ConsumePower,{
