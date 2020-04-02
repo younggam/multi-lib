@@ -17,10 +17,6 @@ const _body={
       }
     }
   },
-  drawPlaceText(text,x,y,valid){
-    var dx=x*this.tilesize,dy=y*this.tilesize;
-    this.super$drawPlaceText(text,x,y,valid);
-  },
   //custom function  supports checkCond
   checkinput(tile,i){
     const entity=tile.ent();
