@@ -1,6 +1,11 @@
 
 const _body={
+  //decides whether show inventory
+  enableInv:true,
   drawSelect(tile){
+    if(!this.enableInv){
+      return;
+    }
     items=this.findOverlapped(tile,true,true);
     var index=0;
     var a=items.length;
@@ -121,6 +126,7 @@ const _body={
   //display bar? shows whether enough material is available
   displayConsumption(tile,table){
     const entity=tile.ent();
+    var z=0;
     table.left();
     for(var i=0;i<entity.getRecipes().input.length;i++){
       for(var j=0;j<entity.getRecipes().input[i].length-1;j++){
@@ -141,11 +147,15 @@ const _body={
           table.add(image).size(8*4);
         }
       }
-      if(i%2==0){
-        table.addImage(Icon.pause).size(8*4);
-      }
-      if(i%2==1){
-        table.row();
+      z+=entity.getsortIstat()[i].length;
+      if(entity.getsortIstat()[i+1]!=null){
+        if(z+entity.getsortIstat()[i+1].length<=7){
+          table.addImage(Icon.pause).size(8*4);
+          z+=1;
+        }else{
+          z=0;
+          table.row();
+        }
       }
     }
   },
@@ -323,56 +333,74 @@ const _body={
   placed(tile){
     this.super$placed(tile);
     const entity=tile.ent();
-    var sort=[];
+    var sortO=[];
+    var sortI=[];
     for(var i=0;i<entity.getRecipes().output.length;i++){
       var index=0;
-      if(sort[i]==null){
-        sort[i]=[];
+      if(sortO[i]==null){
+        sortO[i]=[];
       }
       for(var o=0;o<entity.getRecipes().output[i].length;o++){
         if(entity.getRecipes().output[i][o]!=null){
           if(Array.isArray(entity.getRecipes().output[i][o])){
-            sort[i][index]=entity.getRecipes().output[i][o].join('');
+            sortO[i][index]=entity.getRecipes().output[i][o].join('');
           }else{
-            sort[i][index]=entity.getRecipes().output[i][o];
+            sortO[i][index]=entity.getRecipes().output[i][o];
           }
           index++;
         }
       }
     }
+    for(var i=0;i<entity.getRecipes().input.length;i++){
+      var index_=0;
+      if(sortI[i]==null){
+        sortI[i]=[];
+      }
+      for(var o=0;o<entity.getRecipes().input[i].length-1;o++){
+        if(entity.getRecipes().input[i][o]!=null){
+          if(Array.isArray(entity.getRecipes().input[i][o])){
+            sortI[i][index_]=entity.getRecipes().input[i][o].join('');
+          }else{
+            sortI[i][index_]=entity.getRecipes().input[i][o];
+          }
+          index_++;
+        }
+      }
+    }
     var c=[];
-    for(var k=0;k<sort.length;k++){
+    for(var k=0;k<sortO.length;k++){
       if(c[k]==null){
         c[k]=[];
-        for(var p=0;p<sort.length;p++){
+        for(var p=0;p<sortO.length;p++){
           c[k][p]=true;
         }
       }
-      for(var l=0;l<sort[k].length;l++){
-        for(var n=0;n<sort.length;n++){
+      for(var l=0;l<sortO[k].length;l++){
+        for(var n=0;n<sortO.length;n++){
           var r=false;
-          for(var q=0;q<sort[n].length;q++){
-            r|=(sort[n][q]==sort[k][l]&&sort[n].length==sort[k].length);
+          for(var q=0;q<sortO[n].length;q++){
+            r|=(sortO[n][q]==sortO[k][l]&&sortO[n].length==sortO[k].length);
           }
           c[k][n]&=r
         }
       }
     }
     var e=[];
-    for(var m=0;m<sort.length;m++){
-      if(sort[m][0]==null){
+    for(var m=0;m<sortO.length;m++){
+      if(sortO[m][0]==null){
         e[m]=true;
       }else{
         e[m]=false;
       }
     }
-    for(var m=0;m<sort.length;m++){
-      if(sort[m][0]==null){
+    for(var m=0;m<sortO.length;m++){
+      if(sortO[m][0]==null){
         c[m]=e;
       }
     }
     entity.setOutputStat(c);
-    entity.setSortedStat(sort);
+    entity.setsortOStat(sortO);
+    entity.setsortIStat(sortI);
   },
   //for button
   setCheckButton(a,z,tile){
@@ -416,8 +444,8 @@ const _body={
     table.row();
     var _max=[];
     var max_=0;
-    for(var l=0;l<entity.getSortedStat().length;l++){
-      _max[l]=entity.getSortedStat()[l].length;
+    for(var l=0;l<entity.getsortOStat().length;l++){
+      _max[l]=entity.getsortOStat()[l].length;
     }
     for(var ll=0;ll<_max.length;ll++){
       max_=max_==0?_max[ll]:max_<_max[ll]?_max[ll]:max_;

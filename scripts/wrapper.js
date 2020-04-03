@@ -101,11 +101,17 @@ module.exports={
       getOutputStat(){
         return this._outputStat;
       },
-      setSortedStat(j){
-        this._sortedStat=j;
+      setsortOStat(j){
+        this._sortOStat=j;
       },
-      getSortedStat(){
-        return this._sortedStat;
+      getsortOStat(){
+        return this._sortOStat;
+      },
+      setsortIStat(k){
+        this._sortIStat=k;
+      },
+      getsortIstat(){
+        return this._sortIStat
       },
       _progressArr:[],
       _toggle:0,
@@ -114,7 +120,8 @@ module.exports={
       _itemStat:[],
       _recipes:rec,
       _outputStat:[],
-      _sortedStat:[]
+      _sortOStat:[],
+      _sortIStat:[]
     }));
     //power request change every recipe
     multi.consumes.add(extend(ConsumePower,{
