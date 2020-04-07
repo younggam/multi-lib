@@ -434,11 +434,9 @@ const _body={
     group.setMaxCheckCount(-1);
     for(var i=0;i<entity.getRecipes().input.length+1;i++){
       (function (i,tile){
-        var button=table.addImageButton(Tex.whiteui,Styles.clearToggleTransi,40,run(()=>Vars.control.input.frag.config.hideConfig())).group(group).get();
-        button.changed(run(()=>tile.configure(button.isChecked()?i:-1)));
+        var button=table.addImageButton(Tex.whiteui,Styles.clearToggleTransi,40,run(()=>tile.configure(button.isChecked()?i:-1))).group(group).get();
         button.getStyle().imageUp=new TextureRegionDrawable(i!=entity.getRecipes().output.length?entity.getRecipes().output[i][0]!=null?Vars.content.getByName(ContentType.item,entity.getRecipes().output[i][0][0]).icon(Cicon.small):entity.getRecipes().output[i][entity.getRecipes().output[i].length-2]!=null?Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[i][entity.getRecipes().output[i].length-2][0]).icon(Cicon.small):entity.getRecipes().output[i][entity.getRecipes().output[i].length-1]!=null?Icon.power:Icon.cancel:Icon.trash);
         button.update(run(()=>button.setChecked(!tile.block().hasEntity()?false:tile.block().setCheckButton(entity.getToggle(),i,tile))));
-
       })(i,tile)
     }
     table.row();
