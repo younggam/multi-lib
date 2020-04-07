@@ -1,5 +1,14 @@
 # multi-lib
 Mindustry library mode that contains multicrafter scripts
+
+How to use
+----------
+see code in
+https://github.com/younggam/multi-lib-example/tree/master
+
+and you must add ```dependencies:["multi-lib"]``` in mod.json in your mode
+
+
 ScreenShots
 -----------
 ![제목 없음44](https://user-images.githubusercontent.com/61054554/78659489-9a142e80-7906-11ea-9e55-ab363c3fd970.png)
@@ -10,9 +19,4 @@ ScreenShots
 ![제목 없음39](https://user-images.githubusercontent.com/61054554/78659519-a3050000-7906-11ea-837f-d07777082424.png)
 ![제목 없음38](https://user-images.githubusercontent.com/61054554/78659526-a4cec380-7906-11ea-881a-d8fd8b57f6af.png)
 
-How to use
-----------
-see code in
-https://github.com/younggam/multi-lib-example/tree/master
 
-and you must add ```dependencies:["multi-lib"]``` in mod.json in your mode
