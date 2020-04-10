@@ -1,89 +1,97 @@
 
 const _body={
-  //decides whether show inventory
+  //whether show inventory
   enableInv:true,
+  //for dump
+  dumpToggle:true,
+  //display when cursor is on block
   drawSelect(tile){
     if(!this.enableInv){
       return;
     }
-    items=this.findOverlapped(tile,true,true);
     var index=0;
-    var a=items.length;
+    var a=this.itemList.length;
+    //decide how much to put in a row
     var c=this.size+2+(this.size+1)%2;
+    //align to center and display item icon and quantity
     for(i=0;i<Math.ceil(a/c);i++){
       var b=c;
       if(i==parseInt(a/c)){
         b=a%c;
       }
       for(var j=0;j<b;j++){
-        Draw.rect(items[index].icon(Cicon.xlarge),tile.drawx()-Math.floor(b/2)*8+j*8,tile.drawy()+(this.size+2)*4-8*i,8,8);
+        Draw.rect(this.itemList[index].icon(Cicon.xlarge),tile.drawx()-Math.floor(b/2)*8+j*8,tile.drawy()+(this.size+2)*4-8*i,8,8);
         this.drawPlaceText(tile.entity.getItemStat()[index],tile.x-Math.floor(b/2)+j,tile.y-i,true);
         index++;
       }
     }
   },
-  //custom function  supports checkCond
+  //custom function that checks item and liquid  is enough
   checkinput(tile,i){
     const entity=tile.ent();
-    var vs=[];
     var bs=false;
-    for(var j=0;j<entity.getRecipes().input[i].length-1;j++){
-      if(entity.getRecipes().input[i][j]!=null){
-        if(j!=entity.getRecipes().input[i].length-2){
-          vs[j]=entity.items.get(Vars.content.getByName(ContentType.item,entity.getRecipes().input[i][j][0]))<entity.getRecipes().input[i][j][1];
-        }else{
-          vs[j]=entity.liquids.get(Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[i][j][0]))<entity.getRecipes().input[i][j][1];
-        }
-        bs|=vs[j];
+    //items
+    if(this.input[i][0][0]!=null){
+      for(var j=0;j<this.input[i][0].length;j++){
+        bs|=entity.items.get(this.input[i][0][j].item)<this.input[i][0][j].amount;
+      }
+    }
+    //liquids
+    if(this.input[i][1][0]!=null){
+      for(var j=0;j<this.input[i][1].length;j++){
+        bs|=entity.liquids.get(this.input[i][1][j].liquid)<this.input[i][1][j].amount;
       }
     }
     return bs;
   },
-  //custom function supprots checkCond
+  //custom function that checks space for item and liquid
   checkoutput(tile,i){
     const entity=tile.ent();
-    var vs_=[];
     var bs_=false;
-    for(var j=0;j<entity.getRecipes().output[i].length-1;j++){
-      if(entity.getRecipes().output[i][j]!=null){
-        if(j!=entity.getRecipes().output[i].length-2){
-          vs_[j]=entity.items.get(Vars.content.getByName(ContentType.item,entity.getRecipes().output[i][j][0]))>this.itemCapacity-entity.getRecipes().output[i][j][1];
-        }else{
-          vs_[j]=entity.liquids.get(Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[i][j][0]))>this.liquidCapacity-entity.getRecipes().output[i][j][1];
-        }
-        bs_|=vs_[j];
+    //items
+    if(this.output[i][0][0]!=null){
+      for(var j=0;j<this.output[i][0].length;j++){
+        bs_|=entity.items.get(this.output[i][0][j].item)+this.output[i][0][j].amount>this.itemCapacity;
+      }
+    }
+    //liquids
+    if(this.output[i][1][0]!=null){
+      for(var j=0;j<this.output[i][1].length;j++){
+        bs_|=entity.liquids.get(this.output[i][1][j].liquid)+this.output[i][1][j].amount>this.liquidCapacity;
       }
     }
     return bs_;
   },
-  //custom function decide whether to produce or not.
+  //custom function that decides whether to produce
   checkCond(tile,i){
     const entity=tile.ent();
     if(entity.getToggle()==i){
       if(this.checkoutput(tile,i)){
         return false;
-      }else if(entity.getRecipes().output[i][entity.getRecipes().output[i].length-2]!=null&&entity.liquids.get(Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[i][entity.getRecipes().output[i].length-2][0]))>=this.liquidCapacity-0.001){
+      }
+      else if(this.checkinput(tile,i)){
         return false;
-      }else if(this.checkinput(tile,i)){
-        return false;
-      }else if(this.hasPower==true&&entity.power.status<=0&&entity.getRecipes().input[i][entity.getRecipes().input[i].length-1]!=null){
+      }
+      //check power
+      else if(this.hasPower==true&&entity.power.status<=0&&this.input[i][2]!=null){
         return false;
       }else{
         return true;
       }
     }
   },
-  //custom function supports update()
+  //custom function for consumeing items and liquids
   customCons(tile,i){
     const entity=tile.ent();
     entity.saveCond(this.checkCond(tile,i));
     if(this.checkCond(tile,i)){
+      //do produce
       if(entity.getProgress(i)!=0&&entity.getProgress(i)!=null){
         entity.progress=entity.getProgress(i);
         entity.saveProgress(i,0);
       }
 
-      entity.progress+=this.getProgressIncrease(entity,entity.getRecipes().craftTimes[i]);
+      entity.progress+=this.getProgressIncrease(entity,this.craftTimes[i]);
       entity.totalProgress+=entity.delta();
       entity.warmup=Mathf.lerpDelta(entity.warmup,1,0.02);
 
@@ -98,195 +106,281 @@ const _body={
 
 
   },
-  //decide which item to receive
+  //decides which item to accept
   acceptItem(item,tile,source){
     const entity=tile.ent();
     var _bs=false;
-    for(var i=0;i<entity.getRecipes().input.length;i++){
-      for(var j=0;j<entity.getRecipes().input[i].length-2;j++){
-        if(entity.getRecipes().input[i][j]!=null){
-          _bs|=item==Vars.content.getByName(ContentType.item,entity.getRecipes().input[i][j][0])?true:false;
+    for(var i=0;i<this.input.length;i++){
+      if(this.input[i][0][0]!=null){
+        for(var j=0;j<this.input[i][0].length;j++){
+          _bs|=item==this.input[i][0][j].item?true:false;
         }
       }
     }
-    return _bs&&entity.items.get(item)<this.getMaximumAccepted(tile,item);
+    return _bs&&entity.items.get(item)<this.itemCapacity;
   },
-  //decide which liquids to receive
+  //decides which liquid to accept
   acceptLiquid(tile,source,liquid,amount){
     const entity=tile.ent();
     var _Bs=false;
-    for(var i=0;i<entity.getRecipes().input.length;i++){
-      if(entity.getToggle()==i&&entity.getRecipes().input[i][entity.getRecipes().input[i].length-2]!=null){
-        _Bs|=liquid==Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[i][entity.getRecipes().input[i].length-2][0])?true:false;
+    for(var i=0;i<this.input.length;i++){
+      if(this.input[i][1][0]!=null){
+        for(var j=0;j<this.input[i][1].length;j++){
+          _Bs|=liquid==this.input[i][1][j].liquid?true:false;
+        }
       }
     }
-
-    return _Bs&&entity.liquids.currentAmount()+amount<this.liquidCapacity&&(entity.liquids.current()==liquid||entity.liquids.currentAmount()<0.01);
+    return _Bs&&entity.liquids.get(liquid)+amount<this.liquidCapacity;
   },
-  //display bar? shows whether enough material is available
+  //displays whether input is enough
   displayConsumption(tile,table){
     const entity=tile.ent();
     var z=0;
+    var y=0;
+    var x=0;
     table.left();
-    for(var i=0;i<entity.getRecipes().input.length;i++){
-      for(var j=0;j<entity.getRecipes().input[i].length-1;j++){
-        var image=new MultiReqImage();
-        if(entity.getRecipes().input[i][j]!=null&&j!=entity.getRecipes().input[i].length-2){
-          Vars.content.items().each(boolf(k=>k==Vars.content.getByName(ContentType.item,entity.getRecipes().input[i][j][0])),cons((item)=>{
-            var m1=entity.getRecipes().input[i][j][1];
-            image.add(new ReqImage(new ItemImage(item.icon(Cicon.medium),entity.getRecipes().input[i][j][1]),boolp(()=>entity!=null&&entity.items.has(item,m1)&&entity.items!=null)));
-          }));
-
-          table.add(image).size(8*4);
-        }else if(entity.getRecipes().input[i][j]!=null){
-          Vars.content.liquids().each(boolf(k=>k==Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[i][j][0])),cons((liquid)=>{
-            var m2=entity.getRecipes().input[i][j][1];
-            var m3=Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[i][j][0]);
-            image.add(new ReqImage(new ItemImage(liquid.icon(Cicon.medium),entity.getRecipes().input[i][j][1]),boolp(()=>entity!=null&&entity.liquids.get(m3)>m2&&entity.items!=null)));
-          }));
-          table.add(image).size(8*4);
+    //input 아이템, 액체 그림 띄우기
+    for(var i=0;i<this.input.length;i++){
+      //아이템
+      if(this.input[i][0][0]!=null){
+        for(var j=0;j<this.input[i][0].length;j++){
+          (function (i,j,input){
+          var item=input[i][0][j].item
+          var amount=input[i][0][j].amount
+          table.add(new ReqImage(new ItemImage(item.icon(Cicon.medium),amount),boolp(()=>entity!=null&&entity.items.has(item,amount)&&entity.items!=null))).size(8*4);
+        })(i,j,this.input)
+        }
+        z+=this.input[i][0].length;
+      }
+      //액체
+      if(this.input[i][1][0]!=null){
+        for(var l=0;l<this.input[i][1].length;l++){
+          (function (i,l,input){
+            var liquid=input[i][1][l].liquid;
+            var amount=input[i][1][l].amount;
+            table.add(new ReqImage(new ItemImage(liquid.icon(Cicon.medium),amount),boolp(()=>entity!=null&&entity.liquids.get(liquid)>amount&&entity.liquids!=null))).size(8*4);
+          })(i,l,this.input)
+        }
+        z+=this.input[i][1].length;
+      }
+      //아이템 유뮤 바에서 레시피 구분및 자동 줄바꿈을 위해 정리된 input item 필요.
+      if(z==0){
+        table.addImage(Icon.cancel).size(8*4);
+        x+=1;
+      }
+      if(this.input[i+1]!=null){
+        if(this.input[i+1][0][0]!=null){
+          y+=this.input[i+1][0].length;
+        }
+        if(this.input[i+1][1][0]!=null){
+          y+=this.input[i+1][1].length;
+        }
+        x+=z;
+        if(x+y<=7&&y!=0){
+          table.addImage(Icon.pause).size(8*4);
+          x+=1;
+        }else if(x+y<=6&&y==0){
+          table.addImage(Icon.pause).size(8*4);
+          x+=1;
+        }else{
+          table.row();
+          x=0;
         }
       }
-      z+=entity.getsortIstat()[i].length;
-      if(entity.getsortIstat()[i+1]!=null){
-        if(z+entity.getsortIstat()[i+1].length<=7){
-          table.addImage(Icon.pause).size(8*4);
-          z+=1;
-        }else{
-          z=0;
-          table.row();
+      y=0;
+      z=0;
+    }
+  },
+  //for dislpying info
+  setStats(){
+    this.super$setStats();
+    this.stats.remove(BlockStat.powerUse);
+    this.stats.remove(BlockStat.productionTime);
+    //crafTimes
+    for(var i=0;i<this.craftTimes.length;i++){
+      this.stats.add(BlockStat.productionTime,i+1,StatUnit.none);
+      this.stats.add(BlockStat.productionTime,this.craftTimes[i]/60,StatUnit.seconds);
+    }
+    //output
+    for(var j=0;j<this.output.length;j++){
+      this.stats.add(BlockStat.output,j+1,StatUnit.none);
+      //items
+      if(this.output[j][0][0]!=null){
+        for(var jj=0;jj<this.output[j][0].length;jj++){
+          this.stats.add(BlockStat.output,this.output[j][0][jj]);
+        }
+      }
+      //liquids
+      if(this.output[j][1][0]!=null){
+        for(var jj=0;jj<this.output[j][1].length;jj++){
+          this.stats.add(BlockStat.output,this.output[j][1][jj].liquid,this.output[j][1][jj].amount,false);
         }
       }
     }
+    //input
+    for(var k=0;k<this.input.length;k++){
+      this.stats.add(BlockStat.input,k+1,StatUnit.none);
+      //items
+      if(this.input[k][0][0]!=null){
+        for(var l=0;l<this.input[k][0].length;l++){
+          this.stats.add(BlockStat.input,this.input[k][0][l]);
+        }
+      }
+      //liquids
+      if(this.input[k][1][0]!=null){
+        for(var l=0;l<this.input[k][1].length;l++){
+          this.stats.add(BlockStat.input,this.input[k][1][l].liquid,this.input[k][1][l].amount,false);
+        }
+      }
+    }
+    //poweroutput
+    for(var ii=0;ii<this.output.length;ii++){
+      if(this.output[ii][2]!=null){
+        this.stats.add(BlockStat.basePowerGeneration,ii+1,StatUnit.none);
+        this.stats.add(BlockStat.basePowerGeneration,this.output[ii][2]*60,StatUnit.powerSecond);
+      }else{
+        this.stats.add(BlockStat.basePowerGeneration,ii+1,StatUnit.none);
+        this.stats.add(BlockStat.basePowerGeneration,0,StatUnit.powerSecond);
+      }
+    }
+    //powerconsume
+    for(var l=0;l<this.input.length;l++){
+      if(this.input[l][2]!=null){
+        this.stats.add(BlockStat.powerUse,l+1,StatUnit.none);
+        this.stats.add(BlockStat.powerUse,this.input[l][2]*60,StatUnit.powerSecond);
+      }else{
+        this.stats.add(BlockStat.powerUse,l+1,StatUnit.none);
+        this.stats.add(BlockStat.powerUse,0,StatUnit.powerSecond);
+      }
+    }
   },
-  //show current amount of items and poweroutput
+  //for displaying bars
   setBars(){
     this.super$setBars();
+    //initialize
+    this.bars.remove("liquid");
     this.bars.remove("items");
-    this.bars.add("items",func(entity=>
-      new Bar(prov(()=>Core.bundle.format("bar.items",entity.tile.entity.getItemStat().join('/')
-    )),prov(()=>Pal.items),floatp(()=>entity.items.total()/(this.itemCapacity*this.findOverlapped(entity.tile,true,false))))
-    ));
-    this.bars.add("poweroutput",func(entity=>
-      new Bar(prov(()=>Core.bundle.format("bar.poweroutput",entity.block.getPowerProduction(entity.tile)*60)),prov(()=>Pal.powerBar),floatp(()=>entity.tile.entity!=null?entity.tile.entity.getPowerStat():0))
-    ));
+    var powerBarI=false;
+    var powerBarO=false;
+    //decdes whether show poweroutput bar
+    for(var i=0;i<this.output.length;i++){
+      if(this.output[i][2]!=null){
+        powerBarO|=true;
+      }
+    }
+    if(powerBarO){
+      this.outputsPower=true;
+      this.bars.add("poweroutput",func(entity=>
+        new Bar(prov(()=>Core.bundle.format("bar.poweroutput",entity.block.getPowerProduction(entity.tile)*60)),prov(()=>Pal.powerBar),floatp(()=>entity.tile.entity!=null?entity.tile.entity.getPowerStat():0))
+      ));
+    }else{
+      this.outputsPower=false;
+    }
+    //decides whether show powerUse bar
+    for(var i=0;i<this.input.length;i++){
+      if(this.input[i][2]!=null){
+        powerBarI|=true;
+      }
+    }
+    if(!powerBarI){
+      this.bars.remove("power");
+    }
+    //show current Items amount
+    if(this.itemList[0]!=null){
+      (function(itemCapacity,itemList,bars){
+        bars.add("items",func(entity=>
+          new Bar(prov(()=>Core.bundle.format("bar.items",entity.tile.entity.getItemStat().join('/')))
+          ,prov(()=>Pal.items)
+          ,floatp(()=>entity.items.total()/(itemCapacity*itemList.length)))
+        ));
+      })(this.itemCapacity,this.itemList,this.bars)
+    }
+    //display every Liquids that can contain
+    if(this.liquidList[0]!=null){
+      for(var i=0;i<this.liquidList.length;i++){
+        (function(i,liquidList,liquidCapacity,bars){
+          bars.add("liquid"+i,func(entity=>
+            new Bar(prov(()=>liquidList[i].localizedName),prov(()=>liquidList[i].barColor()),floatp(()=>entity.liquids.get(liquidList[i])/liquidCapacity))
+          ));
+        })(i,this.liquidList,this.liquidCapacity,this.bars)
+      }
+    }
   },
-  //progress
+  //for progress
   getProgressIncrease(entity,baseTime){
-    for(var i=0;i<entity.tile.entity.getRecipes().input.length;i++){
-      if(baseTime==entity.tile.entity.getRecipes().craftTimes[i]&&entity.tile.entity.getRecipes().input[i][entity.tile.entity.getRecipes().input[i].length-1]!=null){
+    for(var i=0;i<this.input.length;i++){
+      //when use power
+      if(baseTime==this.craftTimes[i]&&this.input[i][2]!=null){
         return this.super$getProgressIncrease(entity,baseTime);
-      }else if(baseTime==entity.tile.entity.getRecipes().craftTimes[i]){
+      }
+      //
+      else if(baseTime==this.craftTimes[i]){
         return 1/baseTime*entity.delta();
       }
     }
   },
-  //Real power production
+  //acutal power prodcution
   getPowerProduction(tile){
     const entity=tile.ent();
-    for(var i=0;i<entity.getRecipes().output.length;i++){
-      if(entity.getToggle()==i&&entity.getRecipes().output[i][entity.getRecipes().output[i].length-1]!=null&&entity.getCond()){
-        if(entity.getRecipes().input[i][entity.getRecipes().input[i].length-1]!=null){
-          return entity.getRecipes().output[i][entity.getRecipes().output[i].length-1]*entity.efficiency();
-        }else{
-          return entity.getRecipes().output[i][entity.getRecipes().output[i].length-1];
+    for(var i=0;i<this.output.length;i++){
+      if(entity.getToggle()==i&&this.output[i][2]!=null&&entity.getCond()){
+        //when use power
+        if(this.input[i][2]!=null){
+          entity.setPowerStat(entity.efficiency());
+          return this.output[i][2]*entity.efficiency();
+        }
+        //
+        else{
+          entity.setPowerStat(1);
+          return this.output[i][2];
         }
       }
     }
+    entity.setPowerStat(0);
     return 0;
   },
-  //check overLapped input and contain some util
-  findOverlapped(tile,a,b){
-    if(!tile.block().hasEntity()){
-      return;
-    }
-    const entity=tile.ent();
-    var n=0;
-    var overlapped=[];
-    var overLapped=[];
-    var divided=[];
-    var index=0;
-    var index_=0;
-    for(var j=0;j<entity.getRecipes().output.length;j++){
-      for(var jj=0;jj<entity.getRecipes().output[j].length-2;jj++){
-        if(entity.getRecipes().output[j][jj]!=null){
-          overlapped[index]=Vars.content.getByName(ContentType.item,entity.getRecipes().output[j][jj][0]);
-          n+=1;
-          index++;
-        }
-      }
-    }
-    for(var i=0;i<entity.getRecipes().input.length;i++){
-      for(var ii=0;ii<entity.getRecipes().input[i].length-2;ii++){
-        if(entity.getRecipes().input[i][ii]!=null){
-          overlapped[index]=Vars.content.getByName(ContentType.item,entity.getRecipes().input[i][ii][0]);
-          n+=1;
-          index++;
-        }
-      }
-    }
-    for(var k=0;k<overlapped.length;k++){
-      if(overlapped.indexOf(overlapped[k])!=k){
-        n-=1;
-      }else if(tile!=null){
-        divided[index_]=overlapped[k];
-        overLapped[index_]=entity.items.get(overlapped[k]);
-        index_++;
-      }
-    }
-    if(a==true&&b==true){
-      return divided;
-    }else if(a==true){
-      return n;
-    }else if(b==true){
-      return overLapped;
-    }
-  },
+  //custom function that add or remove items when progress is ongoing.
   customProd(tile,i){
     const entity=tile.ent();
-    for(var k=0;k<entity.getRecipes().input[i].length-2;k++){
-      if(entity.getRecipes().input[i][k]!=null){
-        entity.items.remove(ItemStack(Vars.content.getByName(ContentType.item,entity.getRecipes().input[i][k][0]),entity.getRecipes().input[i][k][1]));
+    //consume items
+    if(this.input[i][0][0]!=null){
+      for(var k=0;k<this.input[i][0].length;k++){
+        entity.items.remove(this.input[i][0][k]);
       }
     }
-    if(entity.getRecipes().input[i][entity.getRecipes().input[i].length-2]!=null){
-      entity.liquids.remove(Vars.content.getByName(ContentType.liquid,entity.getRecipes().input[i][entity.getRecipes().input[i].length-2][0]),entity.getRecipes().input[i][entity.getRecipes().input[i].length-2][1]);
+    //consume liquids
+    if(this.input[i][1][0]!=null){
+      for(var j=0;j<this.input[i][1].length;j++){
+        entity.liquids.remove(this.input[i][1][j].liquid,this.input[i][1][j].amount);
+      }
     }
-    for(var a=0;a<entity.getRecipes().output[i].length-2;a++){
-      if(entity.getRecipes().output[i][a]!=null){
-        this.useContent(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[i][a][0]));
-        for(var aa=0;aa<entity.getRecipes().output[i][a][1];aa++){
-          this.offloadNear(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[i][a][0]));
+    //produce items
+    if(this.output[i][0][0]!=null){
+      for(var a=0;a<this.output[i][0].length;a++){
+        this.useContent(tile,this.output[i][0][a].item);
+        for(var aa=0;aa<this.output[i][0][a].amount;aa++){
+          this.offloadNear(tile,this.output[i][0][a].item);
         }
       }
     }
-    if(entity.getRecipes().output[i][entity.getRecipes().output[i].length-2]!=null){
-      this.useContent(tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[i][entity.getRecipes().output[i].length-2][0]));
-      this.handleLiquid(tile,tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[i][entity.getRecipes().output[i].length-2][0]),entity.getRecipes().output[i][entity.getRecipes().output[i].length-2][1]);
+    //produce liquids
+    if(this.output[i][1][0]!=null){
+      for(var j=0;j<this.output[i][1].length;j++){
+        this.useContent(tile,this.output[i][1][j].liquid);
+        this.handleLiquid(tile,tile,this.output[i][1][j].liquid,this.output[i][1][j].amount);
+      }
     }
-
     Effects.effect(this.craftEffect,tile.drawx(),tile.drawy());
     entity.progress=0;
   },
-  //now optimized. no limit on recipes' length
+  //update. called every tick
   update(tile){
     const entity=tile.ent();
-    entity.modifyItemStat(this.findOverlapped(tile,false,true));
-    for(var j=0;j<entity.getRecipes().input.length;j++){
-      if(entity.getRecipes().output[j][entity.getRecipes().output[j].length-1]!=null&&entity.getToggle()==j&&entity.getCond()){
-        if(entity.getRecipes().input[j][entity.getRecipes().input[j].length-1]!=null){
-          entity.modifyPowerStat(entity.efficiency());
-        }else{
-          entity.modifyPowerStat(1);
-        }
-      }else if(entity.getRecipes().output[j][entity.getRecipes().output[j].length-1]==null&&entity.getToggle()==j||entity.getToggle()==-1){
-        entity.modifyPowerStat(0);
-      }
+    for(var i=0;i<this.itemList.length;i++){
+      entity.getItemStat()[i]=entity.items.get(this.itemList[i]);
     }
-    if(!entity.getCond()){
-      entity.modifyPowerStat(0);
-    }
-    for(var z=0;z<entity.getRecipes().input.length;z++){
+    //calls customCons and customProd
+    for(var z=0;z<this.input.length;z++){
       if(entity.getToggle()==z){
         this.customCons(tile,z);
         if(entity.getToggle()==z&&entity.progress>=1){
@@ -295,77 +389,203 @@ const _body={
         break;
       }
     }
-
-
     //dump
-    var _exit=false;
-    if(entity.getToggle()!=entity.getRecipes().input.length){
+    var exitI=false;
+    var exitL=false;
+    //when normal button checked
+    if(entity.getToggle()!=this.input.length){
       if(entity.timer.get(this.timerDump,this.dumpTime)){
-        for(var ii=0;ii<entity.getRecipes().output.length;ii++){
-          for(var ij=0;ij<entity.getRecipes().output[ii].length-2;ij++){
-            if(entity.getRecipes().output[ii][ij]!=null&&entity.items.get(Vars.content.getByName(ContentType.item,entity.getRecipes().output[ii][ij][0]))>0){
-              this.tryDump(tile,Vars.content.getByName(ContentType.item,entity.getRecipes().output[ii][ij][0]));
-              _exit=true;
+        //dump items in order
+        for(var ii=0;ii<this.output.length;ii++){
+          if(this.output[ii][0][0]!=null){
+            for(var ij=0;ij<this.output[ii][0].length;ij++){
+              if(entity.items.get(this.output[ii][0][ij].item)>0&&((!this.dumpToggle)||entity.getToggle()==ii)){
+                this.tryDump(tile,this.output[ii][0][ij].item);
+                exitI=true;
+                break;
+              }
+            }
+            if(exitI){
+              exitI=false;
               break;
             }
-          }if(_exit){
-            _exit=false;
+          }
+        }
+      }
+      //dump liquids in order
+      for(var jj=0;jj<this.output.length;jj++){
+        if(this.output[jj][1][0]!=null){
+          for(var i=0;i<this.output[jj][1].length;i++){
+            if(entity.liquids.get(this.output[jj][1][i].liquid)>0.001&&((!this.dumpToggle)||entity.getToggle()==jj)){
+              this.tryDumpLiquid(tile,this.output[jj][1][i].liquid);
+              exitL=true;
+              break;
+            }
+          }
+          if(exitL){
+            exitL=false;
             break;
           }
         }
       }
-      for(var jj=0;jj<entity.getRecipes().output.length;jj++){
-        if(entity.getRecipes().output[jj][entity.getRecipes().output[jj].length-2]!=null&&entity.liquids.get(Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[jj][entity.getRecipes().output[jj].length-2][0]))>0.01){
-          this.tryDumpLiquid(tile,Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[jj][entity.getRecipes().output[jj].length-2][0]));
-          break;
-        }
-      }
-    }else if(entity.getToggle()==entity.getRecipes().input.length){
+    }
+    //when trash button is checked. dump everything if possible/
+    else if(entity.getToggle()==this.input.length){
+      //dump items and liquids even input
       if(entity.timer.get(this.timerDump,this.dumpTime)&&entity.items.total()>0){
         this.tryDump(tile);
       }
-      if(entity.liquids.currentAmount()>0){
-        this.tryDumpLiquid(tile,entity.liquids.current());
+      if(entity.liquids.total()>0){
+        for(var i=0;i<this.liquidList.length;i++){
+          if(entity.liquids.get(this.liquidList[i])>0.01){
+            this.tryDumpLiquid(tile,this.liquidList[i]);
+            break;
+          }
+        }
       }
     }
   },
-  //for button
-  placed(tile){
-    this.super$placed(tile);
-    const entity=tile.ent();
-    var sortO=[];
-    var sortI=[];
-    for(var i=0;i<entity.getRecipes().output.length;i++){
-      var index=0;
-      if(sortO[i]==null){
-        sortO[i]=[];
-      }
-      for(var o=0;o<entity.getRecipes().output[i].length;o++){
-        if(entity.getRecipes().output[i][o]!=null){
-          if(Array.isArray(entity.getRecipes().output[i][o])){
-            sortO[i][index]=entity.getRecipes().output[i][o].join('');
-          }else{
-            sortO[i][index]=entity.getRecipes().output[i][o];
+  //initialize
+  init(){
+    for(var i=0;i<this._output.length;i++){
+      if(this.output[i]==null)  this.output[i]=[];
+      this.output[i][2]=this._output[i][2];
+    }
+    for(var i=0;i<this._input.length;i++){
+      if(this.input[i]==null) this.input[i]=[];
+      this.input[i][2]=this._input[i][2];
+    }
+    //exlude null things. change output and input to ItemStack, LiquidStack
+    for(var i=0;i<this._output.length;i++){
+      this.output[i][0]=[];
+      this.output[i][1]=[];
+      //ItemStack
+      if(this._output[i][0]!=null){
+        var index=0;
+        for(var j=0;j<this._output[i][0].length;j++){
+          if(this._output[i][0][j]!=null){
+            this.output[i][0][index]=ItemStack(Vars.content.getByName(ContentType.item,this._output[i][0][j][0]),this._output[i][0][j][1]);
+            index++;
           }
-          index++;
+        }
+      }
+      //LiquidStack
+      if(this._output[i][1]!=null){
+        var index=0;
+        for(var j=0;j<this._output[i][1].length;j++){
+          if(this._output[i][1][j]!=null){
+            this.output[i][1][index]=LiquidStack(Vars.content.getByName(ContentType.liquid,this._output[i][1][j][0]),this._output[i][1][j][1]);
+            index++;
+          }
         }
       }
     }
-    for(var i=0;i<entity.getRecipes().input.length;i++){
-      var index_=0;
-      if(sortI[i]==null){
-        sortI[i]=[];
-      }
-      for(var o=0;o<entity.getRecipes().input[i].length-1;o++){
-        if(entity.getRecipes().input[i][o]!=null){
-          if(Array.isArray(entity.getRecipes().input[i][o])){
-            sortI[i][index_]=entity.getRecipes().input[i][o].join('');
-          }else{
-            sortI[i][index_]=entity.getRecipes().input[i][o];
+    for(var i=0;i<this._input.length;i++){
+      this.input[i][0]=[];
+      this.input[i][1]=[];
+      //ItemStack
+      if(this._input[i][0]!=null){
+        var index=0;
+        for(var j=0;j<this._input[i][0].length;j++){
+          if(this._input[i][0][j]!=null){
+            this.input[i][0][index]=ItemStack(Vars.content.getByName(ContentType.item,this._input[i][0][j][0]),this._input[i][0][j][1]);
+            index++;
           }
-          index_++;
         }
       }
+      //LiquidStack
+      if(this._input[i][1]!=null){
+        var index=0;
+        for(var j=0;j<this._input[i][1].length;j++){
+          if(this._input[i][1][j]!=null){
+            this.input[i][1][index]=LiquidStack(Vars.content.getByName(ContentType.liquid,this._input[i][1][j][0]),this._input[i][1][j][1]);
+            index++;
+          }
+        }
+      }
+    }
+    //exclude overlapped things to set list of items
+    var _itemList=[];
+    var indexI=0;
+    //output item
+    for(var i=0;i<this.output.length;i++){
+      if(this.output[i][0][0]!=null){
+        for(var j=0;j<this.output[i][0].length;j++){
+          _itemList[indexI]=this.output[i][0][j].item;
+          indexI++;
+        }
+      }
+    }
+    //input item
+    for(var i=0;i<this.input.length;i++){
+      if(this.input[i][0][0]!=null){
+        for(var j=0;j<this.input[i][0].length;j++){
+          _itemList[indexI]=this.input[i][0][j].item;
+          indexI++;
+        }
+      }
+    }
+    var indexI_=0;
+    for(var i=0;i<_itemList.length;i++){
+      if(_itemList.indexOf(_itemList[i])!=i){
+
+      }else{
+        this.itemList[indexI_]=_itemList[i];
+        indexI_++;
+      }
+    }
+    //exclude overlapped things to set list of liquids
+    var _liquidList=[];
+    var indexL=0;
+    //output liquid
+    for(var i=0;i<this.output.length;i++){
+      if(this.output[i][1][0]!=null){
+        for(var j=0;j<this.output[i][1].length;j++){
+          _liquidList[indexL]=this.output[i][1][j].liquid;
+          indexL++;
+        }
+      }
+    }
+    //input liquid
+    for(var i=0;i<this.input.length;i++){
+      if(this.input[i][1][0]!=null){
+        for(var j=0;j<this.input[i][1].length;j++){
+          _liquidList[indexL]=this.input[i][1][j].liquid;
+          indexL++;
+        }
+      }
+    }
+    var indexL_=0;
+    for(var i=0;i<_liquidList.length;i++){
+      if(_liquidList.indexOf(_liquidList[i])!=i){
+
+      }else{
+        this.liquidList[indexL_]=_liquidList[i];
+        indexL_++;
+      }
+    }
+    var sortO=[];
+    //for buttons. find outputs that actually same
+    for(var i=0;i<this._output.length;i++){
+      var index=0;
+      if(sortO[i]==null) sortO[i]=[];
+      if(this._output[i][0]!=null){
+        for(var j=0;j<this._output[i][0].length;j++){
+          if(this._output[i][0][j]!=null){
+            sortO[i][index]=this._output[i][0][j].join('');
+            index++;
+          }
+        }
+      }
+      if(this._output[i][1]!=null){
+        for(var j=0;j<this._output[i][1].length;j++){
+          if(this._output[i][1][j]!=null){
+            sortO[i][index]=this._output[i][1][j].join('');
+            index++;
+          }
+        }
+      }
+      sortO[i][index]=this._output[i][2];
     }
     var c=[];
     for(var k=0;k<sortO.length;k++){
@@ -398,23 +618,25 @@ const _body={
         c[m]=e;
       }
     }
-    entity.setOutputStat(c);
-    entity.setsortOStat(sortO);
-    entity.setsortIStat(sortI);
+    this.isSameOutput=c;
+    this.super$init();
   },
-  //for button
+  //custom function that decides which button should be checked.
   setCheckButton(a,z,tile){
     const entity=tile.ent();
     if(a==-1){
       return false;
-    }else if(a==entity.getRecipes().output.length&&z==entity.getRecipes().output.length){
+    }
+    //check trash buttosn
+    else if(a==this.output.length&&z==this.output.length){
       return true;
-    }else if(a==entity.getRecipes().output.length&&z!=entity.getRecipes().output.length){
+    }else if(a==this.output.length&&z!=this.output.length){
       return false;
     }
+    //check normal buttons
     var d=[];
-    for(var j=0;j<entity.getOutputStat()[a].length;j++){
-      if(entity.getOutputStat()[a][j]==true){
+    for(var j=0;j<this.isSameOutput[a].length;j++){
+      if(this.isSameOutput[a][j]==true){
         d[j]=j;
       }else{
         d[j]=-10;
@@ -426,63 +648,59 @@ const _body={
       return false;
     }
   },
-  //pop-up when configured
+  //show config menu
   buildConfiguration(tile,table){
     const entity=tile.ent();
     var group=new ButtonGroup();
     group.setMinCheckCount(0);
     group.setMaxCheckCount(-1);
-    for(var i=0;i<entity.getRecipes().input.length+1;i++){
+    var output=this.output;
+    for(var i=0;i<this.input.length+1;i++){
+      //representative images
       (function (i,tile){
         var button=table.addImageButton(Tex.whiteui,Styles.clearToggleTransi,40,run(()=>tile.configure(button.isChecked()?i:-1))).group(group).get();
-        button.getStyle().imageUp=new TextureRegionDrawable(i!=entity.getRecipes().output.length?entity.getRecipes().output[i][0]!=null?Vars.content.getByName(ContentType.item,entity.getRecipes().output[i][0][0]).icon(Cicon.small):entity.getRecipes().output[i][entity.getRecipes().output[i].length-2]!=null?Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[i][entity.getRecipes().output[i].length-2][0]).icon(Cicon.small):entity.getRecipes().output[i][entity.getRecipes().output[i].length-1]!=null?Icon.power:Icon.cancel:Icon.trash);
+        button.getStyle().imageUp=new TextureRegionDrawable(i!=output.length?output[i][0][0]!=null?output[i][0][0].item.icon(Cicon.small):output[i][1][0]!=null?output[i][1][0].liquid.icon(Cicon.small):output[i][2]!=null?Icon.power:Icon.cancel:Icon.trash);
         button.update(run(()=>button.setChecked(!tile.block().hasEntity()?false:tile.block().setCheckButton(entity.getToggle(),i,tile))));
       })(i,tile)
     }
     table.row();
-    var _max=[];
-    var max_=0;
-    for(var l=0;l<entity.getsortOStat().length;l++){
-      _max[l]=entity.getsortOStat()[l].length;
+    //other images
+    var lengths=[];
+    var max=0;
+    for(var l=0;l<this.output.length;l++){
+      if(lengths[l]==null) lengths[l]=[0,0,0];
+      if(this.output[l][0][0]!=null) lengths[l][0]=this.output[l][0].length-1;
+      if(this.output[l][1][0]!=null) lengths[l][1]=this.output[l][1].length;
+      if(this.output[l][2]!=null) lengths[l][2]=1;
     }
-    for(var ll=0;ll<_max.length;ll++){
-      max_=max_==0?_max[ll]:max_<_max[ll]?_max[ll]:max_;
+    for(var i=0;i<lengths.length;i++){
+      max=max<lengths[i][0]+lengths[i][1]+lengths[i][2]?lengths[i][0]+lengths[i][1]+lengths[i][2]:max;
     }
-    for(var jj=1;jj<max_;jj++){
-      for(var kk=0;kk<entity.getRecipes().output.length;kk++){
-        if(jj!=entity.getRecipes().output[kk].length-2&&jj!=entity.getRecipes().output[kk].length-1){
-          table.addImage(entity.getRecipes().output[kk][jj]==null?Tex.clear:Vars.content.getByName(ContentType.item,entity.getRecipes().output[kk][jj][0]).icon(Cicon.small));
+    for(var i=0;i<max;i++){
+      for(var j=0;j<this.output.length;j++){
+        if(lengths[j][0]>0){
+          table.addImage(this.output[j][0][this.output[j][0].length-lengths[j][0]].item.icon(Cicon.small));
+          lengths[j][0]--;
+        }else if(lengths[j][1]>0){
+          table.addImage(this.output[j][1][this.output[j][1].length-lengths[j][1]].liquid.icon(Cicon.small));
+          lengths[j][1]--;
+        }else if(lengths[j][2]>0){
+          if(output[j][0][0]!=null||output[j][1][0]!=null){
+            table.addImage(Icon.power);
+          }else table.addImage(Tex.clear);
+          lengths[j][2]--;
         }else{
           table.addImage(Tex.clear);
         }
       }
       table.row();
     }
-    for(var j=0;j<entity.getRecipes().output.length;j++){
-      var null1=true;
-      for(var a=0;a<entity.getRecipes().output[j].length-2;a++){
-        if(entity.getRecipes().output[j][a]!=null){
-          null1&=false;
-        }
-      }
-      table.addImage(entity.getRecipes().output[j][entity.getRecipes().output[j].length-2]==null||null1?Tex.clear:Vars.content.getByName(ContentType.liquid,entity.getRecipes().output[j][entity.getRecipes().output[j].length-2][0]).icon(Cicon.small));
-    }
-    table.row();
-    for(var k=0;k<entity.getRecipes().output.length;k++){
-      var null2=true;
-      for(var b=0;b<entity.getRecipes().output[k].length-1;b++){
-        if(entity.getRecipes().output[k][b]!=null){
-          null2&=false;
-        }
-      }
-      table.addImage(entity.getRecipes().output[k][entity.getRecipes().output[k].length-1]==null||null2?Tex.clear:Icon.power).height(48);
-    }
-
   },
-  //save which button configured
+  //save which buttons is pressed
   configured(tile,player,value){
     const entity=tile.ent();
-    for(var i=0;i<entity.getRecipes().input.length;i++){
+    for(var i=0;i<this.input.length;i++){
+      //save current progress.
       if(entity.getToggle()==i){
         entity.saveProgress(entity.getToggle(),entity.progress);
 
