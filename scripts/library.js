@@ -90,7 +90,6 @@ const _body={
         entity.progress=entity.getProgress(i);
         entity.saveProgress(i,0);
       }
-
       entity.progress+=this.getProgressIncrease(entity,this.craftTimes[i]);
       entity.totalProgress+=entity.delta();
       entity.warmup=Mathf.lerpDelta(entity.warmup,1,0.02);
@@ -374,6 +373,9 @@ const _body={
     }
     Effects.effect(this.craftEffect,tile.drawx(),tile.drawy());
     entity.progress=0;
+  },
+  shouldIdleSound(tile){
+    return tile.entity.getCond()
   },
   //update. called every tick
   update(tile){
