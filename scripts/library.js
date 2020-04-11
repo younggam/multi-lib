@@ -232,24 +232,42 @@ const _body={
         }
       }
     }
-    //poweroutput
-    for(var ii=0;ii<this.output.length;ii++){
-      if(this.output[ii][2]!=null){
-        this.stats.add(BlockStat.basePowerGeneration,ii+1,StatUnit.none);
-        this.stats.add(BlockStat.basePowerGeneration,this.output[ii][2]*60,StatUnit.powerSecond);
-      }else{
-        this.stats.add(BlockStat.basePowerGeneration,ii+1,StatUnit.none);
-        this.stats.add(BlockStat.basePowerGeneration,0,StatUnit.powerSecond);
+    var powerBarI=false;
+    var powerBarO=false;
+    //decdes whether show poweroutput bar
+    for(var i=0;i<this.output.length;i++){
+      if(this.output[i][2]!=null){
+        powerBarO|=true;
       }
     }
-    //powerconsume
-    for(var l=0;l<this.input.length;l++){
-      if(this.input[l][2]!=null){
-        this.stats.add(BlockStat.powerUse,l+1,StatUnit.none);
-        this.stats.add(BlockStat.powerUse,this.input[l][2]*60,StatUnit.powerSecond);
-      }else{
-        this.stats.add(BlockStat.powerUse,l+1,StatUnit.none);
-        this.stats.add(BlockStat.powerUse,0,StatUnit.powerSecond);
+    //decides whether show powerUse bar
+    for(var i=0;i<this.input.length;i++){
+      if(this.input[i][2]!=null){
+        powerBarI|=true;
+      }
+    }
+    //poweroutput
+    if(powerBarO){
+      for(var ii=0;ii<this.output.length;ii++){
+        if(this.output[ii][2]!=null){
+          this.stats.add(BlockStat.basePowerGeneration,ii+1,StatUnit.none);
+          this.stats.add(BlockStat.basePowerGeneration,this.output[ii][2]*60,StatUnit.powerSecond);
+        }else{
+          this.stats.add(BlockStat.basePowerGeneration,ii+1,StatUnit.none);
+          this.stats.add(BlockStat.basePowerGeneration,0,StatUnit.powerSecond);
+        }
+      }
+    }
+    if(powerBarI){
+      //powerconsume
+      for(var l=0;l<this.input.length;l++){
+        if(this.input[l][2]!=null){
+          this.stats.add(BlockStat.powerUse,l+1,StatUnit.none);
+          this.stats.add(BlockStat.powerUse,this.input[l][2]*60,StatUnit.powerSecond);
+        }else{
+          this.stats.add(BlockStat.powerUse,l+1,StatUnit.none);
+          this.stats.add(BlockStat.powerUse,0,StatUnit.powerSecond);
+        }
       }
     }
   },
@@ -267,6 +285,15 @@ const _body={
         powerBarO|=true;
       }
     }
+    //decides whether show powerUse bar
+    for(var i=0;i<this.input.length;i++){
+      if(this.input[i][2]!=null){
+        powerBarI|=true;
+      }
+    }
+    if(!powerBarI){
+      this.bars.remove("power");
+    }
     if(powerBarO){
       this.outputsPower=true;
       this.bars.add("poweroutput",func(entity=>
@@ -276,15 +303,6 @@ const _body={
       this.outputsPower=true;
     }else{
       this.outputsPower=false;
-    }
-    //decides whether show powerUse bar
-    for(var i=0;i<this.input.length;i++){
-      if(this.input[i][2]!=null){
-        powerBarI|=true;
-      }
-    }
-    if(!powerBarI){
-      this.bars.remove("power");
     }
     //show current Items amount
     if(this.itemList[0]!=null){
