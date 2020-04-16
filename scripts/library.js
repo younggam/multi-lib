@@ -692,7 +692,10 @@ const _body={
     for(var l=0;l<this.output.length;l++){
       if(lengths[l]==null) lengths[l]=[0,0,0];
       if(this.output[l][0][0]!=null) lengths[l][0]=this.output[l][0].length-1;
-      if(this.output[l][1][0]!=null) lengths[l][1]=this.output[l][1].length;
+      if(this.output[l][1][0]!=null){
+        if(this.output[l][0][0]!=null) lengths[l][1]=this.output[l][1].length;
+        else lengths[l][1]=this.output[l][1].length-1;
+      }
       if(this.output[l][2]!=null) lengths[l][2]=1;
     }
     for(var i=0;i<lengths.length;i++){
