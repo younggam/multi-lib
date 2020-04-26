@@ -1,5 +1,11 @@
 # multi-lib
 Mindustry library mode that contains multicrafter scripts
+What you can do with this.
+1. multiple recipes
+2. multiple output in each recipes
+3. multiple liquid as inputs and outputs
+4. multiple craftTime
+5. multiple power consumtions and generations
 
 How to use
 ----------
