@@ -47,6 +47,17 @@ module.exports={
       },
       _itemStat:[],
       //
+      config(){
+        return this._toggle;
+      },
+      write(stream){
+        this.super$write(stream);
+        stream.writeShort(this._toggle);
+      },
+      read(stream,revision){
+        this.super$read(stream,revision);
+        this._toggle=stream.readShort();
+      }
     }));
     //power request change every recipe
     multi.consumes.add(extend(ConsumePower,{
