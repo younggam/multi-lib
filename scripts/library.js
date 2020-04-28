@@ -5,6 +5,9 @@ const _body={
   //for dump
   dumpToggle:true,
   //display when cursor is on block
+  outputsItems(){
+    return true;
+  },
   drawSelect(tile){
     if(!this.enableInv){
       return;
