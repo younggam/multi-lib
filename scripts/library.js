@@ -6,7 +6,11 @@ const _body={
   dumpToggle:true,
   //display when cursor is on block
   outputsItems(){
-    return true;
+    var bool=false;
+    for(var i=0;i<this.output.length;i++){
+      bool|=this.output[i][0][0]!=null
+    }
+    return bool;
   },
   drawSelect(tile){
     if(!this.enableInv){
@@ -300,7 +304,7 @@ const _body={
     if(powerBarO){
       this.outputsPower=true;
       this.bars.add("poweroutput",func(entity=>
-        new Bar(prov(()=>Core.bundle.format("bar.poweroutput",entity.block.getPowerProduction(entity.tile)*60*entity.timeScale)),prov(()=>Pal.powerBar),floatp(()=>entity.tile.entity!=null?entity.tile.entity.getPowerStat():0))
+        new Bar(prov(()=>Core.bundle.format("bar.poweroutput",entity.block.getPowerProduction(entity.tile)*60*entity.timeScalse)),prov(()=>Pal.powerBar),floatp(()=>entity.tile.entity!=null?entity.tile.entity.getPowerStat():0))
       ));
     }else if(!powerBarI){
       this.outputsPower=true;
@@ -645,6 +649,11 @@ const _body={
     }
     this.isSameOutput=c;
     this.super$init();
+    var bools=false;
+    for(var i=0;i<this.output.length;i++){
+      bools|=this.output[i][1][0]!=null
+    }
+    if(bools) this.outputsLiquid=true;
   },
   //custom function that decides which button should be checked.
   setCheckButton(a,z,tile){
