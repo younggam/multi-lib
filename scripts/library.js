@@ -304,7 +304,7 @@ const _body={
     if(powerBarO){
       this.outputsPower=true;
       this.bars.add("poweroutput",func(entity=>
-        new Bar(prov(()=>Core.bundle.format("bar.poweroutput",entity.block.getPowerProduction(entity.tile)*60*entity.timeScalse)),prov(()=>Pal.powerBar),floatp(()=>entity.tile.entity!=null?entity.tile.entity.getPowerStat():0))
+        new Bar(prov(()=>Core.bundle.format("bar.poweroutput",entity.block.getPowerProduction(entity.tile)*60*entity.timeScale)),prov(()=>Pal.powerBar),floatp(()=>entity.tile.entity!=null?entity.tile.entity.getPowerStat():0))
       ));
     }else if(!powerBarI){
       this.outputsPower=true;
