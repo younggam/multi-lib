@@ -383,6 +383,7 @@ const _body={
     //produce items
     if(this.output[i][0][0]!=null){
       for(var a=0;a<this.output[i][0].length;a++){
+        entity.getOutputItemList()[this.output[i][0][a].item.id]=[this.output[i][0][a].item.id,i];
         this.useContent(tile,this.output[i][0][a].item);
         for(var aa=0;aa<this.output[i][0][a].amount;aa++){
           this.offloadNear(tile,this.output[i][0][a].item);
@@ -392,6 +393,7 @@ const _body={
     //produce liquids
     if(this.output[i][1][0]!=null){
       for(var j=0;j<this.output[i][1].length;j++){
+        entity.getOutputLiquidList()[this.output[i][1][j].liquid.id]=[this.output[i][1][j].liquid.id,i];
         this.useContent(tile,this.output[i][1][j].liquid);
         this.handleLiquid(tile,tile,this.output[i][1][j].liquid,this.output[i][1][j].amount);
       }
@@ -405,56 +407,38 @@ const _body={
   //update. called every tick
   update(tile){
     const entity=tile.ent();
+    //to not rewrite whole update
+    if(typeof this["customUpdate"]==="function") this.customUpdate(tile);
     for(var i=0;i<this.itemList.length;i++){
       entity.getItemStat()[i]=entity.items.get(this.itemList[i]);
     }
-    //calls customCons and customProd
-    for(var z=0;z<this.input.length;z++){
-      if(entity.getToggle()==z){
-        this.customCons(tile,z);
-        if(entity.getToggle()==z&&entity.progress>=1){
-          this.customProd(tile,z);
-        }
-        break;
-      }
-    }
-    //dump
-    var exitI=false;
-    var exitL=false;
     //when normal button checked
     if(entity.getToggle()!=this.input.length){
+      //calls customCons and customProd
+      if(entity.getToggle()>=0){
+        this.customCons(tile,entity.getToggle());
+        if(entity.progress>=1){
+          this.customProd(tile,entity.getToggle());
+        }
+      }
       if(entity.timer.get(this.timerDump,this.dumpTime)){
         //dump items in order
-        for(var ii=0;ii<this.output.length;ii++){
-          if(this.output[ii][0][0]!=null){
-            for(var ij=0;ij<this.output[ii][0].length;ij++){
-              if(entity.items.get(this.output[ii][0][ij].item)>0&&((!this.dumpToggle)||entity.getToggle()==ii)){
-                this.tryDump(tile,this.output[ii][0][ij].item);
-                exitI=true;
-                break;
-              }
-            }
-            if(exitI){
-              exitI=false;
-              break;
-            }
+        for(var ii in entity.getOutputItemList()){
+          if(entity.items.get(Vars.content.item(entity.getOutputItemList()[ii][0]))<=0){
+            delete entity.getOutputItemList()[ii];
+          }else if((!this.dumpToggle)||entity.getToggle()==entity.getOutputItemList()[ii][1]){
+            this.tryDump(tile,Vars.content.item(entity.getOutputItemList()[ii][0]));
+            break;
           }
         }
       }
       //dump liquids in order
-      for(var jj=0;jj<this.output.length;jj++){
-        if(this.output[jj][1][0]!=null){
-          for(var i=0;i<this.output[jj][1].length;i++){
-            if(entity.liquids.get(this.output[jj][1][i].liquid)>0.001&&((!this.dumpToggle)||entity.getToggle()==jj)){
-              this.tryDumpLiquid(tile,this.output[jj][1][i].liquid);
-              exitL=true;
-              break;
-            }
-          }
-          if(exitL){
-            exitL=false;
-            break;
-          }
+      for(var jj in entity.getOutputLiquidList()){
+        if(entity.liquids.get(Vars.content.liquid(entity.getOutputLiquidList()[jj][0]))<=0.001){
+          delete entity.getOutputLiquidList()[ii];
+        }else if((!this.dumpToggle)||entity.getToggle()==entity.getOutputItemList()[ii][1]){
+          this.tryDumpLiquid(tile,Vars.content.liquid(entity.getOutputLiquidList()[jj][0]));
+          break;
         }
       }
     }
@@ -464,7 +448,7 @@ const _body={
       if(entity.timer.get(this.timerDump,this.dumpTime)&&entity.items.total()>0){
         this.tryDump(tile);
       }
-      if(entity.liquids.total()>0){
+      if(entity.liquids.total()>0.01){
         for(var i=0;i<this.liquidList.length;i++){
           if(entity.liquids.get(this.liquidList[i])>0.01){
             this.tryDumpLiquid(tile,this.liquidList[i]);
