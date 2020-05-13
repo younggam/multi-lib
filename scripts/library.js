@@ -378,7 +378,7 @@ const _body={
     if(this.output[i][1][0]!=null){
       for(var j=0;j<this.output[i][1].length;j++){
         this.useContent(tile,this.output[i][1][j].liquid);
-        this.handleLiquid(tile,tile,this.output[i][1][j].liquid,this.output[i][1][j].amount);
+        this.handleLiquid(tile,tile,this.output[i][1][j].liquid,Math.min(this.output[i][1][j].amount,this.liquidCapacity-entity.liquids.get(this.output[i][1][j].liquid)));
       }
     }
     Effects.effect(this.craftEffect,tile.drawx(),tile.drawy());
