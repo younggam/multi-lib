@@ -106,6 +106,7 @@ const _body={
   //decides which item to accept
   acceptItem(item,tile,source){
     const entity=tile.ent();
+    if(entity==null) return false;
     if(entity.items.get(item)>=this.itemCapacity) return false;
     for(var i in this.inputItemList){
       if(item==this.inputItemList[i]){
@@ -117,6 +118,7 @@ const _body={
   //decides which liquid to accept
   acceptLiquid(tile,source,liquid,amount){
     const entity=tile.ent();
+    if(entity==null) return false;
     if(entity.liquids.get(liquid)+amount>this.liquidCapacity) return false;
     for(var i in this.inputLiquidList){
       if(liquid==this.inputLiquidList[i]){
