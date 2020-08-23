@@ -198,12 +198,10 @@ const _body={
     var i=0;
     if(!this.liquidSet.isEmpty()){
       this.liquidSet.each(cons(k=>{
-        //(function(i,liquidList,liquidCapacity,bars){
-          this.bars.add("liquid"+i,func(entity=>
-            new Bar(prov(()=>k.localizedName),prov(()=>k.barColor()),floatp(()=>entity.liquids.get(k)/this.liquidCapacity))
-          ));
-          i++;
-        //})(i,this.liquidSet,this.liquidCapacity,this.bars)
+        this.bars.add("liquid"+i,func(entity=>
+          new Bar(prov(()=>k.localizedName),prov(()=>k.barColor()),floatp(()=>entity.liquids.get(k)/this.liquidCapacity))
+        ));
+        i++;
       }));
     }
   },
