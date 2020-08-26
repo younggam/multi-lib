@@ -1,4 +1,12 @@
 const lib=require("multi-lib2/library");
+function cloneObject(obj){
+  var clone={};
+  for(var i in obj){
+    if(typeof(obj[i])=="object"&&obj[i]!=null) clone[i]=cloneObject(obj[i]);
+    else clone[i]=obj[i];
+  }
+  return clone;
+}
 module.exports={
   extend(Type,name,recipes,def,Entity){
     const block=Object.create(lib.body);
@@ -49,7 +57,7 @@ module.exports={
         this.super$read(stream,revision);
         this._toggle=stream.readShort();
       }
-    },Entity)));
+    },cloneObject(Entity))));
     multi.consumes.add(extend(ConsumePower,{
       requestedPower(entity){
         if(typeof entity["getToggle"]!=="function")  return 0;

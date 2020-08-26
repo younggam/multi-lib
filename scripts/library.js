@@ -270,7 +270,7 @@ const _body={
     //to not rewrite whole update
     if(typeof this["customUpdate"]==="function") this.customUpdate(tile);
     //calls customCons and customProd
-    if(current>=0&&current<recLen) {
+    if(current>=0) {
       this.customCons(tile,current);
       if(entity.progress>=1) this.customProd(tile,current);
     }
@@ -480,6 +480,9 @@ const _body={
   onConfigureTileTapped(tile,other){
     if(tile!=other) this.invFrag.hide();
     return true;
+  },
+  removed(tile){
+    this.invFrag.hide();
   }
 };
 module.exports={
