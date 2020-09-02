@@ -137,7 +137,7 @@ const _body = {
             {
                 (function(j, items)
                 {
-                    table.add(new ReqImage(new ItemImage(items[j].item.icon(Cicon.medium), items[j].amount), boolp(() => typeof entity["items"] === "object" && entity.items.has(items[j].item, items[j].amount)))).size(8 * 4);
+                    table.add(new ReqImage(new ItemImage(items[j].item.icon(Cicon.medium), items[j].amount), boolp(() => entity.items != null && entity.items.has(items[j].item, items[j].amount)))).size(8 * 4);
                 })(j, items);
             }
             z += len;
@@ -146,7 +146,7 @@ const _body = {
             {
                 (function(l, liquids)
                 {
-                    table.add(new ReqImage(new ItemImage(liquids[l].liquid.icon(Cicon.medium), liquids[l].amount), boolp(() => typeof entity["liquids"] === "object" && entity.liquids.get(liquids[l].liquid) > liquids[l].amount))).size(8 * 4);
+                    table.add(new ReqImage(new ItemImage(liquids[l].liquid.icon(Cicon.medium), liquids[l].amount), boolp(() => entity.liquids != null && entity.liquids.get(liquids[l].liquid) > liquids[l].amount))).size(8 * 4);
                 })(l, liquids);
             }
             z += len;
