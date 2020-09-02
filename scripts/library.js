@@ -106,7 +106,7 @@ const _body = {
     acceptItem(item, tile, source)
     {
         const entity = tile.ent();
-        if (typeof entity["items"] !== "object") return false;
+        if (entity == null) return false;
         if (entity.items.get(item) >= this.itemCapacity) return false;
         return this.inputItemSet.contains(item);
     },
@@ -114,7 +114,7 @@ const _body = {
     acceptLiquid(tile, source, liquid, amount)
     {
         const entity = tile.ent();
-        if (typeof entity["liquids"] !== "object") return false;
+        if (entity == null) return false;
         if (entity.liquids.get(liquid) + amount > this.liquidCapacity) return false;
         return this.inputLiquidSet.contains(liquid);
     },
