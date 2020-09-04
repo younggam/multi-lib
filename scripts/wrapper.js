@@ -1,83 +1,66 @@
 const lib = require("multi-lib2/library");
 
-function cloneObject(obj)
-{
+function cloneObject(obj) {
     var clone = {};
-    for (var i in obj)
-    {
+    for (var i in obj) {
         if (typeof(obj[i]) == "object" && obj[i] != null) clone[i] = cloneObject(obj[i]);
         else clone[i] = obj[i];
     }
     return clone;
 }
 module.exports = {
-    extend(Type, name, recipes, def, Entity)
-    {
+    extend(Type, name, recipes, def, Entity) {
         const block = Object.create(lib.body);
         Object.assign(block, def);
         const multi = extendContent(Type, name, block);
-        multi.entityType = prov(() => extend(GenericCrafter.GenericCrafterEntity, Object.assign(
-        {
+        multi.entityType = prov(() => extend(GenericCrafter.GenericCrafterEntity, Object.assign({
             //버튼 눌린거 저장
-            setToggle(a)
-            {
+            setToggle(a) {
                 this._toggle = a;
             },
-            getToggle()
-            {
+            getToggle() {
                 return this._toggle;
             },
             _toggle: 0,
             //버튼 바꼈을때 진행상황 저장
-            saveProgress(c, d)
-            {
+            saveProgress(c, d) {
                 this._progressArr[c] = d;
             },
-            getProgress(e)
-            {
+            getProgress(e) {
                 return this._progressArr[e];
             },
             _progressArr: [],
             //현재 생산 중인지 저장
-            saveCond(f)
-            {
+            saveCond(f) {
                 this._cond = f;
             },
-            getCond()
-            {
+            getCond() {
                 return this._cond;
             },
             _cond: false,
             //전력 출력 바 용 현재 전력출력상황
-            setPowerStat(g)
-            {
+            setPowerStat(g) {
                 this._powerStat = g;
             },
-            getPowerStat()
-            {
+            getPowerStat() {
                 return this._powerStat;
             },
             _powerStat: 0,
             //
-            config()
-            {
+            config() {
                 return this._toggle;
             },
-            write(stream)
-            {
+            write(stream) {
                 this.super$write(stream);
                 stream.writeShort(this._toggle);
             },
-            read(stream, revision)
-            {
+            read(stream, revision) {
                 this.super$read(stream, revision);
                 this._toggle = stream.readShort();
             }
         }, cloneObject(Entity))));
-        multi.consumes.add(extend(ConsumePower,
-        {
-            requestedPower(entity)
-            {
+        multi.consumes.add(extend(ConsumePower, {
+            requestedPower(entity) {
                 if (typeof entity["getToggle"] !== "function") return 0;
                 var i = entity.getToggle();
                 if (i < 0) return 0;
