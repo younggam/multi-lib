@@ -47,6 +47,13 @@ module.exports = {
             },
             _powerStat: 0,
             //
+            _itemHas:0,
+            getItemHas(){
+                return this._itemHas;
+            },
+            setItemHas(a){
+                this._itemHas=a;
+            },
             config() {
                 return this._toggle;
             },

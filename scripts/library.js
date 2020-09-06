@@ -283,6 +283,15 @@ const _body = {
     //update. called every tick
     update(tile) {
         const entity = tile.ent();
+        if (entity.timer.get(1, 60)) {
+            var i = 0;
+            entity.items.forEach(new ItemModule.ItemConsumer() {
+                accept: (item, amount) => {
+                    i++;
+                }
+            });
+            entity.setItemHas(i);
+        }
         if (!this.invFrag.isShown() && Vars.control.input.frag.config.isShown() && Vars.control.input.frag.config.getSelectedTile() == tile) {
             this.invFrag.showFor(tile);
         }
@@ -427,7 +436,13 @@ const _body = {
         this.super$init();
         this.consumesPower = this.powerBarI;
         this.outputsPower = this.powerBarO;
-        this.infoStyle = Core.scene.getStyle(Button.ButtonStyle);
+        this.timers++;
+        if (!Vars.headless) this.infoStyle = Core.scene.getStyle(Button.ButtonStyle);
+    },
+    updateTableAlign(tile, table) {
+        var pos = Core.input.mouseScreen(tile.drawx(), tile.drawy() - this.size * 4 - 1).y;
+        var relative = Core.input.mouseScreen(tile.drawx(), tile.drawy() + this.size * 4);
+        table.setPosition(relative.x, Math.min(pos, relative.y - Math.ceil(tile.ent().getItemHas() / 3) * 48 - 4), Align.top);
     },
     //show config menu
     buildConfiguration(tile, table) {
