@@ -97,7 +97,7 @@ function MultiCrafter() {
     //decides which item to accept
     this.acceptItem = function(item, tile, source) {
         const entity = tile.ent();
-        if(entity == null) return false;
+        if(entity == null || entity.items == null) return false;
         if(entity.items.get(item) >= this.itemCapacity) return false;
         return this.inputItemSet.contains(item);
     };
