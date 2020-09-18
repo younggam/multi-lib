@@ -214,7 +214,7 @@ function MultiCrafter() {
     //for dislpying info
     this.setStats = function() {
         this.super$setStats();
-        this.stats.remove(BlockStat.powerUse);
+        if(this.powerBarI) this.stats.remove(BlockStat.powerUse);
         this.stats.remove(BlockStat.productionTime);
     };
     //for displaying bars
@@ -223,12 +223,8 @@ function MultiCrafter() {
         //initialize
         this.bars.remove("liquid");
         this.bars.remove("items");
-        if(!this.powerBarI) {
-            this.bars.remove("power");
-        }
-        if(this.powerBarO) {
-            this.bars.add("poweroutput", func(entity => new Bar(prov(() => Core.bundle.format("bar.poweroutput", entity.block.getPowerProduction(entity.tile) * 60 * entity.timeScale)), prov(() => Pal.powerBar), floatp(() => typeof entity["getPowerStat"] === "function" ? entity.getPowerStat() : 0))));
-        }
+        if(!this.powerBarI) this.bars.remove("power");
+        if(this.powerBarO) this.bars.add("poweroutput", func(entity => new Bar(prov(() => Core.bundle.format("bar.poweroutput", entity.block.getPowerProduction(entity.tile) * 60 * entity.timeScale)), prov(() => Pal.powerBar), floatp(() => typeof entity["getPowerStat"] === "function" ? entity.getPowerStat() : 0))));
         //display every Liquids that can contain
         var i = 0;
         if(!this.liquidSet.isEmpty()) {
@@ -430,11 +426,14 @@ function MultiCrafter() {
                 }
             }
         }
-        this.super$init();
+        if(!this.powerBarI) {
+            this.consumes.remove(ConsumeType.power);
+            this.hasPower = false;
+        }
         this.consumesPower = this.powerBarI;
         this.outputsPower = this.powerBarO;
-        var writeSize = this.outputItemSet.size * this.recs.length;
-        this.toWrite = writeSize < 128 ? "Byte" : writeSize < 32768 ? "Short" : writeSize < 2147483648 ? "Int" : "Long"
+        this.super$init();
+        if(!this.outputLiquidSet.isEmpty()) this.outputsLiquid = true;
         this.timers++;
         if(!Vars.headless) this.infoStyle = Core.scene.getStyle(Button.ButtonStyle);
     };
