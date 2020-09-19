@@ -114,6 +114,19 @@ function MultiCrafter() {
         if(!entity.items.has(item)) entity.getToOutputItemSet().remove(item);
         return ret;
     };
+    this.handleItem = function(item, tile, source) {
+        const entity = tile.ent(),
+            current = entity.getToggle();
+        if((this.dumpToggle ? current > -1 && this.recs[current].output.items.some(a => a.item == item) : this.outputItemSet.contains(item)) && !entity.items.has(item)) entity.getToOutputItemSet().add(item);
+        entity.items.add(item, 1);
+    };
+    this.handleStack = function(item, amount, tile, source) {
+        const entity = tile.ent(),
+            current = entity.getToggle();
+        entity.noSleep();
+        if((this.dumpToggle ? current > -1 && this.recs[current].output.items.some(a => a.item == item) : this.outputItemSet.contains(item)) && !entity.items.has(item)) entity.getToOutputItemSet().add(item);
+        entity.items.add(item, amount);
+    }
     //displays whether input is enough
     this.displayConsumption = function(tile, table) {
         const entity = tile.ent();
@@ -305,7 +318,6 @@ function MultiCrafter() {
             });
             entity.setItemHas(i);
         }
-        if(!Vars.headless && !this.invFrag.isShown() && Vars.control.input.frag.config.isShown() && Vars.control.input.frag.config.getSelectedTile() == tile) this.invFrag.showFor(tile);
         var recLen = this.recs.length;
         var current = entity.getToggle();
         //to not rewrite whole update
@@ -441,6 +453,7 @@ function MultiCrafter() {
         var pos = Core.input.mouseScreen(tile.drawx(), tile.drawy() - this.size * 4 - 1).y;
         var relative = Core.input.mouseScreen(tile.drawx(), tile.drawy() + this.size * 4);
         table.setPosition(relative.x, Math.min(pos, relative.y - Math.ceil(tile.ent().getItemHas() / 3) * 48 - 4), Align.top);
+        if(!this.invFrag.isShown() && Vars.control.input.frag.config.getSelectedTile() == tile && tile.entity.items.total() > 0) this.invFrag.showFor(tile);
     };
     //show config menu
     this.buildConfiguration = function(tile, table) {
@@ -533,7 +546,7 @@ function MultiCrafter() {
     };
     this.onConfigureTileTapped = function(tile, other) {
         if(tile != other) this.invFrag.hide();
-        return true;
+        return tile.entity.items.total() > 0 ? true : tile != other;
     };
     this.removed = function(tile) {
         this.invFrag.hide();
