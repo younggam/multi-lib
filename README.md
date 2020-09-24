@@ -1,6 +1,10 @@
 # multi-lib
 Mindustry library mode that contains multicrafter scripts
 
+
+currently outdated. replace multi-lib to multi-lib2.
+
+
 How to use
 ----------
 see code in
