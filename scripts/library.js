@@ -189,7 +189,7 @@ function MultiCrafter() {
             var inputPower = this.recs[i].input.power,
                 outputPower = this.recs[i].output.power;
             table.table(this.infoStyle.up, cons(part => {
-                part.add("[accent]" + BlockStat.input.localized()).left().row();
+                part.add("[accent]" + BlockStat.input.localized()).expandX().left().row();
                 part.table(cons(row => {
                     for(var l = 0, len = inputItems.length; l < len; l++) row.add(new ItemDisplay(inputItems[l].item, inputItems[l].amount, true)).padRight(5);
                 })).left().row();
@@ -220,7 +220,7 @@ function MultiCrafter() {
                     (new NumberValue(rec.craftTime / 60, StatUnit.seconds)).display(row);
                 })).left().row();
                 if(typeof this["customDisplay"] === "function") this.customDisplay(part, i);
-            })).color(Pal.accent).left();
+            })).color(Pal.accent).left().growX();
             table.add().size(18).row();
         }
     };
