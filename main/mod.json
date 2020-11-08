@@ -1,0 +1,7 @@
+name: "multi-lib"
+displayName: "Multi Lib"
+author: "younggam"
+description: "[red]m[yellow]u[orange]l[green]t[#01DF74]i\n[gray]library mod for multi crafter. Instruction is in multi-lib-example"
+version: "java: 0.0"
+minGameVersion: "112.1"
+main: "multilib.MultiLib"
