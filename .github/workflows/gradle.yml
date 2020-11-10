@@ -17,9 +17,9 @@ jobs:
       with:
         java-version: 14
     - name: Build mod jar
-      run: ./gradlew deploy
+      run: chmod +x gradlew; ./gradlew deploy
     - name: Upload built jar file
       uses: actions/upload-artifact@v2
       with:
         name: ${{ env.REPOSITORY_NAME }}
-        path: build/libs/multiLib.jar
+        path: build/libs/multi-lib.jar
