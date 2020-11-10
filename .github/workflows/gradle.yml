@@ -10,8 +10,9 @@ jobs:
     jar:
         runs-on: ubuntu-latest
         steps:
+        - uses: actions/checkout@v2
         - name: Using this repo's thingy
-            uses: actions/checkout@v2
+
             # on terminal
             # first line: add android path
             # ! second line: set env.ROPOSITORY_NAME
