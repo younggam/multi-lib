@@ -15,7 +15,7 @@ jobs:
 
             #on terminal
             #first line: add android path
-            #second line: set env.ROPOSITORY_NAME
+            #second line: 
             run: |
                 echo "{${ANDROID_HOME}/build-tools/30.0.1}"
                 echo "{REPOSITORY_NAME}={$GITHUB_REPOSITORY}"
