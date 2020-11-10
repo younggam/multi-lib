@@ -12,7 +12,6 @@ jobs:
         steps:
         - uses: actions/checkout@v2
         - name: Using this repo's thingy
-
             run: |
                 echo "{${ANDROID_HOME}/build-tools/30.0.1}"
                 echo "{REPOSITORY_NAME}={$GITHUB_REPOSITORY}"
