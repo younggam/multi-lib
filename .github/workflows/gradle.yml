@@ -29,5 +29,5 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
             #uses environment variable which set from above
-            name: ${{env.REPOSITORY_NAME}}
-            path: build/libs/${{env.REPOSITORY_NAME}}.jar
+            name: ${{ env.REPOSITORY_NAME }}
+            path: build/libs/${{ env.REPOSITORY_NAME }}.jar
