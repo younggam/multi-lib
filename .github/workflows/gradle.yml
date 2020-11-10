@@ -22,4 +22,4 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: ${{ env.REPOSITORY_NAME }}
-        path: build/libs/multi-lib.jar
+        path: build/libs/multiLib.jar
