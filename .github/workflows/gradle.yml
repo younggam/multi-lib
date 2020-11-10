@@ -12,9 +12,9 @@ jobs:
         steps:
         - name: Using this repo's thingy
             uses: actions/checkout@v2
-            #on terminal
-            #first line: add android path
-            #! second line: set env.ROPOSITORY_NAME
+            # on terminal
+            # first line: add android path
+            # ! second line: set env.ROPOSITORY_NAME
             run: |
                 echo "{${ANDROID_HOME}/build-tools/30.0.1}"
                 echo "{REPOSITORY_NAME}={$GITHUB_REPOSITORY}"
@@ -27,6 +27,6 @@ jobs:
         - name: Upload built jar file
             uses: actions/upload-artifact@v2
             with:
-                #uses environment variable which set from #!
+                # uses environment variable which set from #!
                 name: ${{env.REPOSITORY_NAME}}
                 path: build/libs/${{env.REPOSITORY_NAME}}.jar
