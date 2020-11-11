@@ -1,733 +1,663 @@
-const _body = {
-    //whether show inventory
-    enableInv: true,
-    //for dump
-    dumpToggle: true,
-    //display when cursor is on block
-    outputsItems() {
-        return this.hasOutputItem;
-    },
-    drawSelect(tile) {
-        if (!this.enableInv) {
-            return;
-        }
-        var index = 0;
-        var a = this.itemList.length;
-        //decide how much to put in a row
-        var c = this.size + 2 + (this.size + 1) % 2;
-        //align to center and display item icon and quantity
-        for (i = 0; i < Math.ceil(a / c); i++) {
-            var b = c;
-            if (i == parseInt(a / c)) {
-                b = a % c;
-            }
-            for (var j = 0; j < b; j++) {
-                Draw.rect(this.itemList[index].icon(Cicon.xlarge), tile.drawx() - Math.floor(b / 2) * 8 + j * 8, tile.drawy() + (this.size + 2) * 4 - 8 * i, 8, 8);
-                this.drawPlaceText(tile.entity.getItemStat()[index], tile.x - Math.floor(b / 2) + j, tile.y - i, true);
-                index++;
-            }
-        }
-    },
-    //custom function that checks item and liquid  is enough
-    checkinput(tile, i) {
-        const entity = tile.ent();
-        //items
-        if (this.input[i][0][0] != null) {
-            for (var j = 0; j < this.input[i][0].length; j++) {
-                if (entity.items.get(this.input[i][0][j].item) < this.input[i][0][j].amount) return true;
-            }
-        }
-        //liquids
-        if (this.input[i][1][0] != null) {
-            for (var j = 0; j < this.input[i][1].length; j++) {
-                if (entity.liquids.get(this.input[i][1][j].liquid) < this.input[i][1][j].amount) return true;
-            }
-        }
-        return false;
-    },
-    //custom function that checks space for item and liquid
-    checkoutput(tile, i) {
-        const entity = tile.ent();
-        //items
-        if (this.output[i][0][0] != null) {
-            for (var j = 0; j < this.output[i][0].length; j++) {
-                if (entity.items.get(this.output[i][0][j].item) + this.output[i][0][j].amount > this.itemCapacity) return true;
-            }
-        }
-        //liquids
-        if (this.output[i][1][0] != null) {
-            for (var j = 0; j < this.output[i][1].length; j++) {
-                if (entity.liquids.get(this.output[i][1][j].liquid) + this.output[i][1][j].amount > this.liquidCapacity) return true;
-            }
-        }
-        return false;
-    },
-    //custom function that decides whether to produce
-    checkCond(tile, i) {
-        const entity = tile.ent();
-        if (entity.getToggle() == i) {
-            if (this.hasPower == true && entity.power.status <= 0 && this.input[i][2] != null) {
-                return false;
-            } else if (this.checkinput(tile, i)) {
-                return false;
-            }
-            //check power
-            else if (this.checkoutput(tile, i)) {
-                return false;
-            } else {
-                return true;
-            }
-        }
-    },
-    //custom function for consuming items and liquids
-    customCons(tile, i) {
-        const entity = tile.ent();
-        entity.saveCond(this.checkCond(tile, i));
-        if (this.checkCond(tile, i)) {
-            //do produce
-            if (entity.getProgress(i) != 0 && entity.getProgress(i) != null) {
-                entity.progress = entity.getProgress(i);
-                entity.saveProgress(i, 0);
-            }
-            entity.progress += this.getProgressIncrease(entity, this.craftTimes[i]);
-            entity.totalProgress += entity.delta();
-            entity.warmup = Mathf.lerpDelta(entity.warmup, 1, 0.02);
-
-            if (Mathf.chance(Time.delta() * this.updateEffectChance)) {
-                Effects.effect(this.updateEffect, entity.x + Mathf.range(this.size * 4), entity.y + Mathf.range(this.size * 4));
-            }
-
-        } else {
-            entity.warmup = Mathf.lerp(entity.warmup, 0, 0.02);
-        }
-    },
-    //decides which item to accept
-    acceptItem(item, tile, source) {
-        const entity = tile.ent();
-        if (entity == null || entity.items == null) return false;
-        if (entity.items.get(item) >= this.itemCapacity) return false;
-        for (var i in this.inputItemList) {
-            if (item == this.inputItemList[i]) {
-                return true;
-            }
-        }
-        return false;
-    },
-    //decides which liquid to accept
-    acceptLiquid(tile, source, liquid, amount) {
-        const entity = tile.ent();
-        if (entity == null || entity.liquids == null) return false;
-        if (entity.liquids.get(liquid) + amount > this.liquidCapacity) return false;
-        for (var i in this.inputLiquidList) {
-            if (liquid == this.inputLiquidList[i]) {
-                return true;
-            }
-        }
-        return false;
-    },
-    //displays whether input is enough
-    displayConsumption(tile, table) {
-        const entity = tile.ent();
+function MultiCrafterBuild() {
+    this.acceptItem = function(source, item) {
+        if(typeof this.block["getInputItemSet"] !== "function") return false;
+        if(this.items.get(item) >= this.getMaximumAccepted(item)) return false;
+        var ret = this.block.getInputItemSet();
+        return ret.contains(item);
+    };
+    this.acceptLiquid = function(source, liquid, amount) {
+        if(typeof this.block["getInputLiquidSet"] !== "function") return false;
+        if(this.liquids.get(liquid) + amount > this.block.liquidCapacity) return false;
+        return this.block.getInputLiquidSet().contains(liquid);
+    };
+    this.removeStack = function(item, amount) {
+        var ret = this.super$removeStack(item, amount);
+        if(!this.items.has(item)) this.toOutputItemSet.remove(item);
+        return ret;
+    };
+    this.handleItem = function(source, item) {
+        var current = this._toggle;
+        if((this.block.doDumpToggle() ? current > -1 && this.block.getRecipes()[current].output.items.some(a => a.item == item) : this.block.getOutputItemSet().contains(item)) && !this.items.has(item)) this.toOutputItemSet.add(item);
+        this.items.add(item, 1);
+    };
+    this.handleStack = function(item, amount, tile, source) {
+        var current = this._toggle;
+        if((this.block.doDumpToggle() ? current > -1 && this.block.getRecipes()[current].output.items.some(a => a.item == item) : this.block.getOutputItemSet().contains(item)) && !this.items.has(item)) this.toOutputItemSet.add(item);
+        this.items.add(item, amount);
+    };
+    this.displayConsumption = function(table) {
+        if(typeof this.block["getRecipes"] !== "function") return;
+        const recs = this.block.getRecipes();
         var z = 0;
         var y = 0;
         var x = 0;
+        var recLen = recs.length;
         table.left();
         //input 아이템, 액체 그림 띄우기
-        for (var i = 0; i < this.input.length; i++) {
+        for(var i = 0; i < recLen; i++) {
+            var items = recs[i].input.items;
+            var liquids = recs[i].input.liquids;
+            if(!recs[i].output.items.every(a => a.item.unlockedNow()) || !recs[i].output.liquids.every(b => b.liquid.unlockedNow())) continue;
             //아이템
-            if (this.input[i][0][0] != null) {
-                for (var j = 0; j < this.input[i][0].length; j++) {
-                    (function(i, j, input) {
-                        var item = input[i][0][j].item
-                        var amount = input[i][0][j].amount
-                        table.add(new ReqImage(new ItemImage(item.icon(Cicon.medium), amount), boolp(() => entity != null && entity.items.has(item, amount) && entity.items != null))).size(8 * 4);
-                    })(i, j, this.input)
-                }
-                z += this.input[i][0].length;
-            }
+            for(var j = 0, len = items.length; j < len; j++) {
+                (function(that, stack) {
+                    table.add(new ReqImage(new ItemImage(stack.item.icon(Cicon.medium), stack.amount), () => that.items != null && that.items.has(stack.item, stack.amount))).size(8 * 4);
+                })(this, items[j]);
+            };
+            z += len;
             //액체
-            if (this.input[i][1][0] != null) {
-                for (var l = 0; l < this.input[i][1].length; l++) {
-                    (function(i, l, input) {
-                        var liquid = input[i][1][l].liquid;
-                        var amount = input[i][1][l].amount;
-                        table.add(new ReqImage(new ItemImage(liquid.icon(Cicon.medium), amount), boolp(() => entity != null && entity.liquids.get(liquid) > amount && entity.liquids != null))).size(8 * 4);
-                    })(i, l, this.input)
-                }
-                z += this.input[i][1].length;
-            }
+            for(var l = 0, len = liquids.length; l < len; l++) {
+                (function(that, stack) {
+                    table.add(new ReqImage(new ItemImage(stack.liquid.icon(Cicon.medium), stack.amount), () => that.liquids != null && that.liquids.get(stack.liquid) > stack.amount)).size(8 * 4);
+                })(this, liquids[l]);
+            };
+            z += len;
             //아이템 유뮤 바에서 레시피 구분및 자동 줄바꿈을 위해 정리된 input item 필요.
-            if (z == 0) {
-                table.addImage(Icon.cancel).size(8 * 4);
+            if(z == 0) {
+                table.image(Icon.cancel).size(8 * 4);
                 x += 1;
-            }
-            if (this.input[i + 1] != null) {
-                if (this.input[i + 1][0][0] != null) {
-                    y += this.input[i + 1][0].length;
-                }
-                if (this.input[i + 1][1][0] != null) {
-                    y += this.input[i + 1][1].length;
-                }
+            };
+            if(i < recLen - 1) {
+                var next = recs[i + 1].input;
+                y += next.items.length + next.liquids.length;
                 x += z;
-                if (x + y <= 7 && y != 0) {
-                    table.addImage(Icon.pause).size(8 * 4);
-                    x += 1;
-                } else if (x + y <= 6 && y == 0) {
-                    table.addImage(Icon.pause).size(8 * 4);
+                if(x + y <= 8 && y != 0 || x + y <= 7 && y == 0) {
+                    table.image(Icon.pause).size(8 * 4);
                     x += 1;
                 } else {
                     table.row();
                     x = 0;
-                }
-            }
+                };
+            };
             y = 0;
             z = 0;
         }
-    },
-    //for dislpying info
-    setStats() {
-        this.super$setStats();
-        this.stats.remove(BlockStat.powerUse);
-        this.stats.remove(BlockStat.productionTime);
-        //crafTimes
-        for (var i = 0; i < this.craftTimes.length; i++) {
-            this.stats.add(BlockStat.productionTime, i + 1, StatUnit.none);
-            this.stats.add(BlockStat.productionTime, this.craftTimes[i] / 60, StatUnit.seconds);
+    };
+    this.getPowerProduction = function() {
+        var i = this._toggle;
+        if(i < 0 || typeof this.block["getRecipes"] !== "function") return 0;
+        var oPower = this.block.getRecipes()[i].output.power;
+        if(oPower > 0 && this._cond) {
+            if(this.block.getRecipes()[i].input.power > 0) {
+                this._powerStat = this.efficiency();
+                return oPower * this.efficiency();
+            } else {
+                this._powerStat = 1;
+                return oPower;
+            };
         }
-        //output
-        for (var j = 0; j < this.output.length; j++) {
-            this.stats.add(BlockStat.output, j + 1, StatUnit.none);
-            //items
-            if (this.output[j][0][0] != null) {
-                for (var jj = 0; jj < this.output[j][0].length; jj++) {
-                    this.stats.add(BlockStat.output, this.output[j][0][jj]);
-                }
-            }
-            //liquids
-            if (this.output[j][1][0] != null) {
-                for (var jj = 0; jj < this.output[j][1].length; jj++) {
-                    this.stats.add(BlockStat.output, this.output[j][1][jj].liquid, this.output[j][1][jj].amount, false);
-                }
-            }
-        }
-        //input
-        for (var k = 0; k < this.input.length; k++) {
-            this.stats.add(BlockStat.input, k + 1, StatUnit.none);
-            //items
-            if (this.input[k][0][0] != null) {
-                for (var l = 0; l < this.input[k][0].length; l++) {
-                    this.stats.add(BlockStat.input, this.input[k][0][l]);
-                }
-            }
-            //liquids
-            if (this.input[k][1][0] != null) {
-                for (var l = 0; l < this.input[k][1].length; l++) {
-                    this.stats.add(BlockStat.input, this.input[k][1][l].liquid, this.input[k][1][l].amount, false);
-                }
-            }
-        }
-        var powerBarI = false;
-        var powerBarO = false;
-        //decdes whether show poweroutput bar
-        for (var i = 0; i < this.output.length; i++) {
-            if (this.output[i][2] != null) {
-                powerBarO |= true;
-            }
-        }
-        //decides whether show powerUse bar
-        for (var i = 0; i < this.input.length; i++) {
-            if (this.input[i][2] != null) {
-                powerBarI |= true;
-            }
-        }
-        //poweroutput
-        if (powerBarO) {
-            for (var ii = 0; ii < this.output.length; ii++) {
-                if (this.output[ii][2] != null) {
-                    this.stats.add(BlockStat.basePowerGeneration, ii + 1, StatUnit.none);
-                    this.stats.add(BlockStat.basePowerGeneration, this.output[ii][2] * 60, StatUnit.powerSecond);
-                } else {
-                    this.stats.add(BlockStat.basePowerGeneration, ii + 1, StatUnit.none);
-                    this.stats.add(BlockStat.basePowerGeneration, 0, StatUnit.powerSecond);
-                }
-            }
-        }
-        if (powerBarI) {
-            //powerconsume
-            for (var l = 0; l < this.input.length; l++) {
-                if (this.input[l][2] != null) {
-                    this.stats.add(BlockStat.powerUse, l + 1, StatUnit.none);
-                    this.stats.add(BlockStat.powerUse, this.input[l][2] * 60, StatUnit.powerSecond);
-                } else {
-                    this.stats.add(BlockStat.powerUse, l + 1, StatUnit.none);
-                    this.stats.add(BlockStat.powerUse, 0, StatUnit.powerSecond);
-                }
-            }
-        }
-    },
-    //for displaying bars
-    setBars() {
-        this.super$setBars();
-        //initialize
-        this.bars.remove("liquid");
-        this.bars.remove("items");
-        var powerBarI = false;
-        var powerBarO = false;
-        //decdes whether show poweroutput bar
-        for (var i = 0; i < this.output.length; i++) {
-            if (this.output[i][2] != null) {
-                powerBarO |= true;
-            }
-        }
-        //decides whether show powerUse bar
-        for (var i = 0; i < this.input.length; i++) {
-            if (this.input[i][2] != null) {
-                powerBarI |= true;
-            }
-        }
-        if (!powerBarI) {
-            this.bars.remove("power");
-        }
-        if (powerBarO) {
-            this.outputsPower = true;
-            this.bars.add("poweroutput", func(entity =>
-                new Bar(prov(() => Core.bundle.format("bar.poweroutput", entity.block.getPowerProduction(entity.tile) * 60 * entity.timeScale)), prov(() => Pal.powerBar), floatp(() => entity != null ? entity.getPowerStat() : 0))
-            ));
-        } else if (!powerBarI) {
-            this.outputsPower = true;
-        } else {
-            this.outputsPower = false;
-        }
-        //show current Items amount
-        if (this.itemList[0] != null) {
-            (function(itemCapacity, itemList, bars) {
-                bars.add("items", func(entity =>
-                    new Bar(prov(() => Core.bundle.format("bar.items", entity.getItemStat().join('/'))), prov(() => Pal.items), floatp(() => entity.items.total() / (itemCapacity * itemList.length)))
-                ));
-            })(this.itemCapacity, this.itemList, this.bars)
-        }
-        //display every Liquids that can contain
-        if (this.liquidList[0] != null) {
-            for (var i = 0; i < this.liquidList.length; i++) {
-                (function(i, liquidList, liquidCapacity, bars) {
-                    bars.add("liquid" + i, func(entity =>
-                        new Bar(prov(() => liquidList[i].localizedName), prov(() => liquidList[i].barColor()), floatp(() => entity.liquids.get(liquidList[i]) / liquidCapacity))
-                    ));
-                })(i, this.liquidList, this.liquidCapacity, this.bars)
-            }
-        }
-    },
-    //for progress
-    getProgressIncrease(entity, baseTime) {
-        //when use power
-        if (this.input[entity.getToggle()][2] != null) {
-            return this.super$getProgressIncrease(entity, baseTime);
-        }
-        //
-        else {
-            return 1 / baseTime * entity.delta();
-        }
-    },
-    //acutal power prodcution
-    getPowerProduction(tile) {
-        const entity = tile.ent();
-        var i = entity.getToggle();
-        if (i < 0 || i >= this.input.length) return 0;
-        if (this.output[i][2] != null && entity.getCond()) {
-            //when use power
-            if (this.input[i][2] != null) {
-                entity.setPowerStat(entity.efficiency());
-                return this.output[i][2] * entity.efficiency();
-            }
-            //
-            else {
-                entity.setPowerStat(1);
-                return this.output[i][2];
-            }
-        }
-        entity.setPowerStat(0);
+        this._powerStat = 0;
         return 0;
-    },
-    //custom function that add or remove items when progress is ongoing.
-    customProd(tile, i) {
-        const entity = tile.ent();
+    };
+    this.getProgressIncreaseA = function(i, baseTime) {
+        //when use power
+        if(typeof this.block["getRecipes"] !== "function" || this.block.getRecipes()[i].input.power > 0) return this.getProgressIncrease(baseTime);
+        else return 1 / baseTime * this.delta();
+    };
+    this.checkinput = function(i) {
+        const recs = this.block.getRecipes();
+        //items
+        var items = recs[i].input.items;
+        var liquids = recs[i].input.liquids;
+        if(!this.items.has(items)) return true;
+        //liquids
+        for(var j = 0, len = liquids.length; j < len; j++) {
+            if(this.liquids.get(liquids[j].liquid) < liquids[j].amount) return true;
+        };
+        return false;
+    };
+    this.checkoutput = function(i) {
+        const recs = this.block.getRecipes();
+        //items
+        var items = recs[i].output.items;
+        var liquids = recs[i].output.liquids;
+        for(var j = 0, len = items.length; j < len; j++) {
+            if(this.items.get(items[j].item) + items[j].amount > this.getMaximumAccepted(items[j].item)) return true;
+        };
+        //liquids
+        for(var j = 0, len = liquids.length; j < len; j++) {
+            if(this.liquids.get(liquids[j].liquid) + liquids[j].amount > this.block.liquidCapacity) return true;
+        };
+        return false;
+    };
+    this.checkCond = function(i) {
+        if(this.power.status <= 0 && this.block.getRecipes()[i].input.power > 0) {
+            this._condValid = false;
+            this._cond = false;
+            return false;
+        } else if(this.checkinput(i)) { //check power
+            this._condValid = false;
+            this._cond = false;
+            return false;
+        } else if(this.checkoutput(i)) {
+            this._condValid = true;
+            this._cond = false;
+            return false;
+        };
+        this._condValid = true;
+        this._cond = true;
+        return true;
+    };
+    this.customCons = function(i) {
+        const recs = this.block.getRecipes();
+        if(this.checkCond(i)) {
+            //do produce
+            if(this.progressArr[i] != 0 && this.progressArr[i] != null) {
+                this.progress = this.progressArr[i];
+                this.progressArr[i] = 0;
+            };
+            this.progress += this.getProgressIncreaseA(i, recs[i].craftTime);
+            this.totalProgress += this.delta();
+            this.warmup = Mathf.lerpDelta(this.warmup, 1, 0.02);
+            if(Mathf.chance(Time.delta * this.updateEffectChance)) Effects.effect(this.updateEffect, this.x + Mathf.range(this.size * 4), this.y + Mathf.range(this.size * 4));
+        } else this.warmup = Mathf.lerp(this.warmup, 0, 0.02);
+    };
+    this.customProd = function(i) {
+        const recs = this.block.getRecipes();
         //consume items
-        if (this.input[i][0][0] != null) {
-            for (var k = 0; k < this.input[i][0].length; k++) {
-                entity.items.remove(this.input[i][0][k]);
-            }
-        }
+        var inputItems = recs[i].input.items;
+        var inputLiquids = recs[i].input.liquids;
+        var outputItems = recs[i].output.items;
+        var outputLiquids = recs[i].output.liquids;
+        var eItems = this.items;
+        var eLiquids = this.liquids;
+        for(var k = 0, len = inputItems.length; k < len; k++) eItems.remove(inputItems[k]);
         //consume liquids
-        if (this.input[i][1][0] != null) {
-            for (var j = 0; j < this.input[i][1].length; j++) {
-                entity.liquids.remove(this.input[i][1][j].liquid, this.input[i][1][j].amount);
-            }
-        }
+        for(var j = 0, len = inputLiquids.length; j < len; j++) eLiquids.remove(inputLiquids[j].liquid, inputLiquids[j].amount);
         //produce items
-        if (this.output[i][0][0] != null) {
-            for (var a = 0; a < this.output[i][0].length; a++) {
-                this.useContent(tile, this.output[i][0][a].item);
-                for (var aa = 0; aa < this.output[i][0][a].amount; aa++) {
-                    this.offloadNear(tile, this.output[i][0][a].item);
-                }
-            }
-        }
+        for(var a = 0, len = outputItems.length; a < len; a++) {
+            for(var aa = 0, amount = outputItems[a].amount; aa < amount; aa++) {
+                var oItem = outputItems[a].item
+                if(!this.put(oItem)) {
+                    if(!eItems.has(oItem)) this.toOutputItemSet.add(oItem);
+                    eItems.add(oItem, 1);
+                };
+            };
+        };
         //produce liquids
-        if (this.output[i][1][0] != null) {
-            for (var j = 0; j < this.output[i][1].length; j++) {
-                this.useContent(tile, this.output[i][1][j].liquid);
-                this.handleLiquid(tile, tile, this.output[i][1][j].liquid, Math.min(this.output[i][1][j].amount, this.liquidCapacity - entity.liquids.get(this.output[i][1][j].liquid)));
-            }
-        }
-        Effects.effect(this.craftEffect, tile.drawx(), tile.drawy());
-        entity.progress = 0;
-    },
-    shouldIdleSound(tile) {
-        return tile.entity.getCond()
-    },
-    //update. called every tick
-    update(tile) {
-        const entity = tile.ent();
+        for(var j = 0, len = outputLiquids.length; j < len; j++) {
+            var oLiquid = outputLiquids[j].liquid;
+            if(eLiquids.get(oLiquid) <= 0.001) this.toOutputLiquidset.add(oLiquid);
+            this.handleLiquid(this, oLiquid, outputLiquids[j].amount);
+        };
+        this.block.craftEffect.at(this.x, this.y);
+        this.progress = 0;
+    };
+    this.updateTile = function() {
+        if(typeof this.block["getRecipes"] !== "function") return;
+        if(this.timer.get(1, 60)) {
+            this.itemHas = 0;
+            this.items.each(item => this.itemHas++);
+        };
+        const recs = this.block.getRecipes();
+        var recLen = recs.length;
+        var current = this._toggle;
         //to not rewrite whole update
-        if (typeof this["customUpdate"] === "function") this.customUpdate(tile);
-        for (var i = 0; i < this.itemList.length; i++) {
-            entity.getItemStat()[i] = entity.items.get(this.itemList[i]);
-        }
+        if(typeof this["customUpdate"] === "function") this.customUpdate();
         //calls customCons and customProd
-        if (entity.getToggle() >= 0 && entity.getToggle() < this.input.length) {
-            this.customCons(tile, entity.getToggle());
-            if (entity.progress >= 1) this.customProd(tile, entity.getToggle());
-        }
+        if(current >= 0) {
+            this.customCons(current);
+            if(this.progress >= 1) this.customProd(current);
+        };
+        var eItems = this.items;
+        var eLiquids = this.liquids;
         //dump
-        var itemTimer = entity.timer.get(this.timerDump, this.dumpTime);
-        //when normal button checked
-        if (entity.getToggle() != this.input.length) {
-            if (this.dumpToggle && entity.getToggle() != -1) {
-                if (itemTimer && this.output[entity.getToggle()][0][0] != null) {
-                    for (var ij = 0; ij < this.output[entity.getToggle()][0].length; ij++) {
-                        if (entity.items.get(this.output[entity.getToggle()][0][ij].item) > 0) {
-                            this.tryDump(tile, this.output[entity.getToggle()][0][ij].item);
-                            break;
-                        }
-                    }
-                }
-                if (this.output[entity.getToggle()][1][0] != null) {
-                    for (var i = 0; i < this.output[entity.getToggle()][1].length; i++) {
-                        if (entity.liquids.get(this.output[entity.getToggle()][1][i].liquid) > 0.001) {
-                            this.tryDumpLiquid(tile, this.output[entity.getToggle()][1][i].liquid);
-                            break;
-                        }
-                    }
-                }
-            } else {
-                if (itemTimer) {
-                    for (var i in this.outputItemList) {
-                        if (entity.items.get(this.outputItemList[i]) > 0) {
-                            this.tryDump(tile, this.outputItemList[i]);
-                            break;
-                        }
-                    }
-                }
-                for (var i in this.outputLiquidList) {
-                    if (entity.liquids.get(this.outputLiquidList[i]) > 0.001) {
-                        this.tryDumpLiquid(tile, this.outputLiquidList[i]);
-                        break;
-                    }
-                }
-            }
-        }
-        //when trash button is checked. dump everything if possible/
-        else if (entity.getToggle() == this.input.length) {
-            //dump items and liquids even input
-            if (entity.timer.get(this.timerDump, this.dumpTime) && entity.items.total() > 0) {
-                this.tryDump(tile);
-            }
-            if (entity.liquids.total() > 0.01) {
-                for (var i = 0; i < this.liquidList.length; i++) {
-                    if (entity.liquids.get(this.liquidList[i]) > 0.01) {
-                        this.tryDumpLiquid(tile, this.liquidList[i]);
-                        break;
-                    }
-                }
-            }
-        }
-    },
-    //initialize
-    init() {
-        for (var i = 0; i < this._output.length; i++) {
-            if (this.output[i] == null) this.output[i] = [];
-            this.output[i][2] = this._output[i][2];
-        }
-        for (var i = 0; i < this._input.length; i++) {
-            if (this.input[i] == null) this.input[i] = [];
-            this.input[i][2] = this._input[i][2];
-        }
-        //exlude null things. change output and input to ItemStack, LiquidStack
-        for (var i = 0; i < this._output.length; i++) {
-            this.output[i][0] = [];
-            this.output[i][1] = [];
-            //ItemStack
-            if (this._output[i][0] != null) {
-                var index = 0;
-                for (var j = 0; j < this._output[i][0].length; j++) {
-                    if (this._output[i][0][j] != null) {
-                        this.outputItemList[Vars.content.getByName(ContentType.item, this._output[i][0][j][0]).id] = Vars.content.getByName(ContentType.item, this._output[i][0][j][0]);
-                        this.output[i][0][index] = new ItemStack(Vars.content.getByName(ContentType.item, this._output[i][0][j][0]), this._output[i][0][j][1]);
-                        index++;
-                    }
-                }
-            }
-            //LiquidStack
-            if (this._output[i][1] != null) {
-                var index = 0;
-                for (var j = 0; j < this._output[i][1].length; j++) {
-                    if (this._output[i][1][j] != null) {
-                        this.outputLiquidList[Vars.content.getByName(ContentType.liquid, this._output[i][1][j][0]).id] = Vars.content.getByName(ContentType.liquid, this._output[i][1][j][0]);
-                        this.output[i][1][index] = new LiquidStack(Vars.content.getByName(ContentType.liquid, this._output[i][1][j][0]), this._output[i][1][j][1]);
-                        index++;
-                    }
-                }
-            }
-        }
-        for (var i = 0; i < this._input.length; i++) {
-            this.input[i][0] = [];
-            this.input[i][1] = [];
-            //ItemStack
-            if (this._input[i][0] != null) {
-                var index = 0;
-                for (var j = 0; j < this._input[i][0].length; j++) {
-                    if (this._input[i][0][j] != null) {
-                        this.input[i][0][index] = new ItemStack(Vars.content.getByName(ContentType.item, this._input[i][0][j][0]), this._input[i][0][j][1]);
-                        this.inputItemList[Vars.content.getByName(ContentType.item, this._input[i][0][j][0]).id] = Vars.content.getByName(ContentType.item, this._input[i][0][j][0]);
-                        index++;
-                    }
-                }
-            }
-            //LiquidStack
-            if (this._input[i][1] != null) {
-                var index = 0;
-                for (var j = 0; j < this._input[i][1].length; j++) {
-                    if (this._input[i][1][j] != null) {
-                        this.input[i][1][index] = new LiquidStack(Vars.content.getByName(ContentType.liquid, this._input[i][1][j][0]), this._input[i][1][j][1]);
-                        this.inputLiquidList[Vars.content.getByName(ContentType.liquid, this._input[i][1][j][0]).id] = Vars.content.getByName(ContentType.liquid, this._input[i][1][j][0]);
-                        index++;
-                    }
-                }
-            }
-        }
-        //exclude overlapped things to set list of items
-        var _itemList = [];
-        var indexI = 0;
-        //output item
-        for (var i = 0; i < this.output.length; i++) {
-            if (this.output[i][0][0] != null) {
-                for (var j = 0; j < this.output[i][0].length; j++) {
-                    _itemList[indexI] = this.output[i][0][j].item;
-                    indexI++;
-                }
-            }
-        }
-        //input item
-        for (var i = 0; i < this.input.length; i++) {
-            if (this.input[i][0][0] != null) {
-                for (var j = 0; j < this.input[i][0].length; j++) {
-                    _itemList[indexI] = this.input[i][0][j].item;
-                    indexI++;
-                }
-            }
-        }
-        var indexI_ = 0;
-        for (var i = 0; i < _itemList.length; i++) {
-            if (_itemList.indexOf(_itemList[i]) != i) {
-
-            } else {
-                this.itemList[indexI_] = _itemList[i];
-                indexI_++;
-            }
-        }
-        //exclude overlapped things to set list of liquids
-        var _liquidList = [];
-        var indexL = 0;
-        //output liquid
-        for (var i = 0; i < this.output.length; i++) {
-            if (this.output[i][1][0] != null) {
-                for (var j = 0; j < this.output[i][1].length; j++) {
-                    _liquidList[indexL] = this.output[i][1][j].liquid;
-                    indexL++;
-                }
-            }
-        }
-        //input liquid
-        for (var i = 0; i < this.input.length; i++) {
-            if (this.input[i][1][0] != null) {
-                for (var j = 0; j < this.input[i][1].length; j++) {
-                    _liquidList[indexL] = this.input[i][1][j].liquid;
-                    indexL++;
-                }
-            }
-        }
-        var indexL_ = 0;
-        for (var i = 0; i < _liquidList.length; i++) {
-            if (_liquidList.indexOf(_liquidList[i]) != i) {
-
-            } else {
-                this.liquidList[indexL_] = _liquidList[i];
-                indexL_++;
-            }
-        }
-        var sortO = [];
-        //for buttons. find outputs that actually same
-        for (var i = 0; i < this._output.length; i++) {
-            var index = 0;
-            if (sortO[i] == null) sortO[i] = [];
-            if (this._output[i][0] != null) {
-                for (var j = 0; j < this._output[i][0].length; j++) {
-                    if (this._output[i][0][j] != null) {
-                        sortO[i][index] = this._output[i][0][j].join('');
-                        index++;
-                    }
-                }
-            }
-            if (this._output[i][1] != null) {
-                for (var j = 0; j < this._output[i][1].length; j++) {
-                    if (this._output[i][1][j] != null) {
-                        sortO[i][index] = this._output[i][1][j].join('');
-                        index++;
-                    }
-                }
-            }
-            sortO[i][index] = this._output[i][2];
-        }
-        var c = [];
-        for (var k = 0; k < sortO.length; k++) {
-            if (c[k] == null) {
-                c[k] = [];
-                for (var p = 0; p < sortO.length; p++) {
-                    c[k][p] = true;
-                }
-            }
-            for (var l = 0; l < sortO[k].length; l++) {
-                for (var n = 0; n < sortO.length; n++) {
-                    var r = false;
-                    for (var q = 0; q < sortO[n].length; q++) {
-                        r |= (sortO[n][q] == sortO[k][l] && sortO[n].length == sortO[k].length);
-                    }
-                    c[k][n] &= r
-                }
-            }
-        }
-        var e = [];
-        for (var m = 0; m < sortO.length; m++) {
-            if (sortO[m][0] == null) {
-                e[m] = true;
-            } else {
-                e[m] = false;
-            }
-        }
-        for (var m = 0; m < sortO.length; m++) {
-            if (sortO[m][0] == null) {
-                c[m] = e;
-            }
-        }
-        this.isSameOutput = c;
-        this.super$init();
-        var bools = false;
-        for (var i = 0; i < this.output.length; i++) bools |= this.output[i][1][0] != null;
-        if (bools) this.outputsLiquid = true;
-        var hasOutputItem = false;
-        for (var i = 0; i < this.output.length; i++) hasOutputItem |= this.output[i][0][0] != null;
-        this.hasOutputItem = hasOutputItem;
-    },
-    //custom function that decides which button should be checked.
-    setCheckButton(a, z, tile) {
-        const entity = tile.ent();
-        if (a == -1) {
-            return false;
-        }
-        //check trash buttosn
-        else if (a == this.output.length && z == this.output.length) {
-            return true;
-        } else if (a == this.output.length && z != this.output.length) {
-            return false;
-        }
-        //check normal buttons
-        var d = [];
-        for (var j = 0; j < this.isSameOutput[a].length; j++) {
-            if (this.isSameOutput[a][j] == true) {
-                d[j] = j;
-            } else {
-                d[j] = -10;
-            }
-        }
-        if (d.includes(z) && d[z] != -10 && d[z] != null) {
-            return true;
-        } else {
-            return false;
-        }
-    },
-    //show config menu
-    buildConfiguration(tile, table) {
-        const entity = tile.ent();
+        if(this.block.doDumpToggle() && current == -1) return;
+        var que = this.toOutputItemSet.orderedItems(),
+            len = que.size,
+            itemEntry = this.dumpItemEntry;
+        //this is my best optimizing O(1)~O(n)
+        if(this.timer.get(this.block.dumpTime) && len > 0) {
+            for(var i = 0; i < len; i++) {
+                var candidate = que.get((i + itemEntry) % len);
+                if(this.put(candidate)) {
+                    eItems.remove(candidate, 1);
+                    if(!eItems.has(candidate)) this.toOutputItemSet.remove(candidate);
+                    break;
+                };
+            };
+            if(i != len) this.dumpItemEntry = (i + itemEntry) % len;
+        };
+        var que = this.toOutputLiquidset.orderedItems(),
+            len = que.size;
+        if(len > 0) {
+            for(var i = 0; i < len; i++) {
+                var liquid = que.get(i);
+                this.dumpLiquid(liquid);
+                if(eLiquids.get(liquid) <= 0.001) this.toOutputLiquidset.remove(liquid);
+                break;
+            };
+        };
+    };
+    this.shouldConsume = function() {
+        return this._condValid && this.productionValid();
+    };
+    this.productionValid = function() {
+        return this._cond && this.enabled;
+    };
+    this.updateTableAlign = function(table) {
+        var pos = Core.input.mouseScreen(this.x, this.y - this.block.size * 4 - 1).y;
+        var relative = Core.input.mouseScreen(this.x, this.y + this.block.size * 4);
+        table.setPosition(relative.x, Math.min(pos, relative.y - Math.ceil(this.itemHas / 3) * 48 - 4), Align.top);
+        if(!this.block.getInvFrag().isShown() && Vars.control.input.frag.config.getSelectedTile() == this && this.items.total() > 0) this.block.getInvFrag().showFor(this);
+    };
+    this.buildConfiguration = function(table) {
+        if(typeof this.block["getRecipes"] !== "function") return;
+        const recs = this.block.getRecipes(),
+            invFrag = this.block.getInvFrag();
+        if(!invFrag.isBuilt()) invFrag.build(table.parent);
+        if(invFrag.isShown()) {
+            invFrag.hide();
+            Vars.control.input.frag.config.hideConfig();
+            return;
+        };
         var group = new ButtonGroup();
         group.setMinCheckCount(0);
-        group.setMaxCheckCount(-1);
-        var output = this.output;
-        for (var i = 0; i < this.input.length + 1; i++) {
+        group.setMaxCheckCount(1);
+        var recLen = recs.length;
+        var exit = [];
+        for(var i = 0; i < recLen; i++) {
             //representative images
-            (function(i, tile) {
-                var button = table.addImageButton(Tex.whiteui, Styles.clearToggleTransi, 40, run(() => tile.configure(button.isChecked() ? i : -1))).group(group).get();
-                button.getStyle().imageUp = new TextureRegionDrawable(i != output.length ? output[i][0][0] != null ? output[i][0][0].item.icon(Cicon.small) : output[i][1][0] != null ? output[i][1][0].liquid.icon(Cicon.small) : output[i][2] != null ? Icon.power : Icon.cancel : Icon.trash);
-                button.update(run(() => button.setChecked(typeof tile.block()["setCheckButton"] === "function" ? tile.block().setCheckButton(entity.getToggle(), i, tile) : false)));
-            })(i, tile)
-        }
+            (function(i, that) {
+                var output = recs[i].output;
+                exit[i] = (!output.items.every(a => a.item.unlockedNow()) || !output.liquids.every(b => b.liquid.unlockedNow()))
+                if(exit[i]) return;
+                var button = table.button(Tex.whiteui, Styles.clearToggleTransi, 40, () => that.configure(button.isChecked() ? i : -1)).group(group).get();
+                button.getStyle().imageUp = new TextureRegionDrawable(output.items.length > 0 ? output.items[0].item.icon(Cicon.small) : output.liquids.length > 0 ? output.liquids[0].liquid.icon(Cicon.small) : output.power > 0 ? Icon.power : Icon.cancel);
+                button.update(() => button.setChecked(that._toggle == i));
+            })(i, this);
+        };
         table.row();
         //other images
         var lengths = [];
         var max = 0;
-        for (var l = 0; l < this.output.length; l++) {
-            if (lengths[l] == null) lengths[l] = [0, 0, 0];
-            if (this.output[l][0][0] != null) lengths[l][0] = this.output[l][0].length - 1;
-            if (this.output[l][1][0] != null) {
-                if (this.output[l][0][0] != null) lengths[l][1] = this.output[l][1].length;
-                else lengths[l][1] = this.output[l][1].length - 1;
-            }
-            if (this.output[l][2] != null) lengths[l][2] = 1;
-        }
-        for (var i = 0; i < lengths.length; i++) {
+        for(var l = 0; l < recLen; l++) {
+            var output = recs[l].output;
+            var outputItemLen = output.items.length;
+            var outputLiquidLen = output.liquids.length;
+            if(lengths[l] == null) lengths[l] = [0, 0, 0];
+            if(outputItemLen > 0) lengths[l][0] = outputItemLen - 1;
+            if(outputLiquidLen > 0) {
+                if(outputItemLen > 0) lengths[l][1] = outputLiquidLen;
+                else lengths[l][1] = outputLiquidLen - 1;
+            };
+            if(output.power > 0) lengths[l][2] = 1;
+        };
+        for(var i = 0; i < recLen; i++) {
             max = max < lengths[i][0] + lengths[i][1] + lengths[i][2] ? lengths[i][0] + lengths[i][1] + lengths[i][2] : max;
-        }
-        for (var i = 0; i < max; i++) {
-            for (var j = 0; j < this.output.length; j++) {
-                if (lengths[j][0] > 0) {
-                    table.addImage(this.output[j][0][this.output[j][0].length - lengths[j][0]].item.icon(Cicon.small));
+        };
+        for(var i = 0; i < max; i++) {
+            for(var j = 0; j < recLen; j++) {
+                if(exit[j]) continue;
+                var output = recs[j].output;
+                var outputItemLen = output.items.length;
+                var outputLiquidLen = output.liquids.length;
+                if(lengths[j][0] > 0) {
+                    table.image(output.items[outputItemLen - lengths[j][0]].item.icon(Cicon.small));
                     lengths[j][0]--;
-                } else if (lengths[j][1] > 0) {
-                    table.addImage(this.output[j][1][this.output[j][1].length - lengths[j][1]].liquid.icon(Cicon.small));
+                } else if(lengths[j][1] > 0) {
+                    table.image(output.liquids[outputLiquidLen - lengths[j][1]].liquid.icon(Cicon.small));
                     lengths[j][1]--;
-                } else if (lengths[j][2] > 0) {
-                    if (output[j][0][0] != null || output[j][1][0] != null) {
-                        table.addImage(Icon.power);
-                    } else table.addImage(Tex.clear);
+                } else if(lengths[j][2] > 0) {
+                    if(output.items[0] != null || output.liquids[0] != null) {
+                        table.image(Icon.power);
+                    } else table.image(Tex.clear);
                     lengths[j][2]--;
                 } else {
-                    table.addImage(Tex.clear);
-                }
-            }
+                    table.image(Tex.clear);
+                };
+            };
             table.row();
+        };
+    };
+    this.configured = function(player, value) {
+        if(isNaN(value)) {
+            this._toggle = -1;
+            this._cond = false;
+            this._condValid = false;
+            return;
+        };
+        var current = this._toggle;
+        if(current >= 0) this.progressArr[current] = this.progress;
+        if(value == -1) {
+            this._condValid = false;
+            this._cond = false;
+        };
+        if(this.block.doDumpToggle()) {
+            this.toOutputItemSet.clear();
+            this.toOutputLiquidset.clear();
+            if(value > -1) {
+                var oItems = this.block.getRecipes()[value].output.items;
+                var oLiquids = this.block.getRecipes()[value].output.liquids;
+                for(var i = 0, len = oItems.length; i < len; i++) {
+                    var item = oItems[i].item;
+                    if(this.items.has(item)) this.toOutputItemSet.add(item);
+                };
+                for(var i = 0, len = oLiquids.length; i < len; i++) {
+                    var liquid = oLiquids[i].liquid;
+                    if(this.liquids.get(liquid) > 0.001) this.toOutputLiquidset.add(liquid);
+                };
+            };
+        };
+        this.progress = 0;
+        this._toggle = value;
+    };
+    this.onConfigureTileTapped = function(other) {
+        if(this != other) this.block.getInvFrag().hide();
+        return this.items.total() > 0 ? true : this != other;
+    };
+    this.created = function() {
+        var that = this;
+        this.cons = extendContent(ConsumeModule, this, {
+            _entity: that,
+            status() {
+                if(this._entity.productionValid()) return BlockStatus.active;
+                if(this._entity.getCondValid()) return BlockStatus.noOutput;
+                return BlockStatus.noInput;
+            }
+        });
+    };
+    this.getToggle = function() {
+        return this._toggle;
+    };
+    this._toggle = 0;
+    this.progressArr = [];
+    this.getCond = function() {
+        return this._cond;
+    };
+    this._cond = false;
+    this._condValid = false;
+    this.getCondValid = function() {
+        return this._condValid;
+    };
+    this.getPowerStat = function() {
+        return this._powerStat;
+    };
+    this._powerStat = 0;
+    this.toOutputItemSet = new OrderedSet();
+    this.toOutputLiquidset = new OrderedSet();
+    this.dumpItemEntry = 0;
+    this.itemHas = 0;
+    this.config = function() {
+        return this._toggle;
+    };
+    this.write = function(write) {
+        this.super$write(write);
+        write.s(this._toggle);
+        var queItem = this.toOutputItemSet.orderedItems(),
+            len = queItem.size;
+        write.s(len);
+        for(var i = 0; i < len; i++) write.s(queItem.get(i).id);
+        var queLiquid = this.toOutputLiquidset.orderedItems(),
+            len = queLiquid.size;
+        write.s(len);
+        for(var i = 0; i < len; i++) write.s(queLiquid.get(i).id);
+    };
+    this.read = function(read, revision) {
+        this.super$read(read, revision);
+        this._toggle = read.s();
+        this.toOutputItemSet.clear();
+        this.toOutputLiquidset.clear();
+        var len = read.s(),
+            vc = Vars.content,
+            ci = ContentType.item,
+            cl = ContentType.liquid;
+        for(var i = 0; i < len; i++) this.toOutputItemSet.add(vc.getByID(ci, read.s()));
+        var len = read.s();
+        for(var i = 0; i < len; i++) this.toOutputLiquidset.add(vc.getByID(cl, read.s()));
+    };
+};
+
+function MultiCrafterBlock() {
+    this.tempRecs = [];
+    this.recs = [];
+    this.infoStyle = null;
+    this.getRecipes = function() {
+        return this.recs;
+    };
+    this._liquidSet = new ObjectSet();
+    this.getLiquidSet = function() {
+        return this._liquidSet;
+    };
+    this.hasOutputItem = false;
+    this._inputItemSet = new ObjectSet();
+    this.getInputItemSet = function() {
+        return this._inputItemSet;
+    };
+    this._inputLiquidSet = new ObjectSet();
+    this.getInputLiquidSet = function() {
+        return this._inputLiquidSet;
+    };
+    this._outputItemSet = new ObjectSet();
+    this.getOutputItemSet = function() {
+        return this._outputItemSet;
+    };
+    this._outputLiquidSet = new ObjectSet();
+    this.getOutputLiquidSet = function() {
+        return this._outputLiquidSet;
+    };
+    this.dumpToggle = false;
+    this.doDumpToggle = function() {
+        return this.dumpToggle;
+    };
+    this.powerBarI = false;
+    this.powerBarO = false;
+    this._invFrag = extend(BlockInventoryFragment, {
+        _built: false,
+        isBuilt() {
+            return this._built;
+        },
+        visible: false,
+        isShown() {
+            return this.visible;
+        },
+        showFor(t) {
+            this.visible = true;
+            this.super$showFor(t);
+        },
+        hide() {
+            this.visible = false;
+            this.super$hide();
+        },
+        build(parent) {
+            this._built = true;
+            this.super$build(parent);
         }
-    },
-    //save which buttons is pressed
-    configured(tile, player, value) {
-        const entity = tile.ent();
-        //save current progress.
-        if (entity.getToggle() >= 0 && entity.getToggle() < this.input.length) {
-            entity.saveProgress(entity.getToggle(), entity.progress);
+    });
+    this.getInvFrag = function() {
+        return this._invFrag;
+    };
+    this.init = function() {
+        for(var i = 0; i < this.tmpRecs.length; i++) {
+            var tmp = this.tmpRecs[i];
+            var isInputExist = tmp.input != null,
+                isOutputExist = tmp.output != null;
+            var tmpInput = tmp.input;
+            var tmpOutput = tmp.output;
+            if(isInputExist && tmpInput.power > 0) this.powerBarI = true;
+            if(isOutputExist && tmpOutput.power > 0) this.powerBarO = true;
+            this.recs[i] = {
+                input: {
+                    items: [],
+                    liquids: [],
+                    power: isInputExist ? typeof tmpInput.power == "number" ? tmpInput.power : 0 : 0
+                },
+                output: {
+                    items: [],
+                    liquids: [],
+                    power: isOutputExist ? typeof tmpOutput.power == "number" ? tmpOutput.power : 0 : 0
+                },
+                craftTime: typeof tmp.craftTime == "number" ? tmp.craftTime : 80
+            };
+            var vc = Vars.content;
+            var ci = ContentType.item;
+            var cl = ContentType.liquid;
+            var realInput = this.recs[i].input;
+            var realOutput = this.recs[i].output;
+            if(isInputExist) {
+                if(tmpInput.items != null) {
+                    for(var j = 0, len = tmpInput.items.length; j < len; j++) {
+                        if(typeof tmpInput.items[j] != "string") throw "It is not string at " + j + "th input item in " + i + "th recipe";
+                        var words = tmpInput.items[j].split("/");
+                        if(words.length != 2) throw "Malform at " + j + "th input item in " + i + "th recipe";
+                        var item = vc.getByName(ci, words[0]);
+                        if(item == null) throw "Invalid item: " + words[0] + " at " + j + "th input item in " + i + "th recipe";
+                        this._inputItemSet.add(item);
+                        if(isNaN(words[1])) throw "Invalid amount: " + words[1] + " at " + j + "th input item in " + i + "th recipe";
+                        realInput.items[j] = new ItemStack(item, words[1] * 1);
+                    };
+                };
+                if(tmpInput.liquids != null) {
+                    for(var j = 0, len = tmpInput.liquids.length; j < len; j++) {
+                        if(typeof tmpInput.liquids[j] != "string") throw "It is not string at " + j + "th input liquid in " + i + "th recipe";
+                        var words = tmpInput.liquids[j].split("/");
+                        if(words.length != 2) throw "Malform at " + j + "th input liquid in " + i + "th recipe";
+                        var liquid = vc.getByName(cl, words[0]);
+                        if(liquid == null) throw "Invalid liquid: " + words[0] + " at " + j + "th input liquid in " + i + "th recipe";
+                        this._inputLiquidSet.add(liquid);
+                        this._liquidSet.add(liquid);
+                        if(isNaN(words[1])) throw "Invalid amount: " + words[1] + " at " + j + "th input liquid in " + i + "th recipe";
+                        realInput.liquids[j] = new LiquidStack(liquid, words[1] * 1);
+                    };
+                };
+            };
+            if(isOutputExist) {
+                if(tmpOutput.items != null) {
+                    for(var j = 0, len = tmpOutput.items.length; j < len; j++) {
+                        if(typeof tmpOutput.items[j] != "string") throw "It is not string at " + j + "th output item in " + i + "th recipe";
+                        var words = tmpOutput.items[j].split("/");
+                        if(words.length != 2) throw "Malform at " + j + "th output item in " + i + "th recipe"
+                        var item = vc.getByName(ci, words[0]);
+                        if(item == null) throw "Invalid item: " + words[0] + " at " + j + "th output item in " + i + "th recipe";
+                        this.outputItemSet.add(item);
+                        if(isNaN(words[1])) throw "Invalid amount: " + words[1] + " at " + j + "th output item in " + i + "th recipe";
+                        realOutput.items[j] = new ItemStack(item, words[1] * 1);
+                    };
+                    if(j != 0) this.hasOutputItem = true;
+                };
+                if(tmpOutput.liquids != null) {
+                    for(var j = 0, len = tmpOutput.liquids.length; j < len; j++) {
+                        if(typeof tmpOutput.liquids[j] != "string") throw "It is not string at " + j + "th output liquid in " + i + "th recipe";
+                        var words = tmpOutput.liquids[j].split("/");
+                        if(words.length != 2) throw "Malform at " + j + "th output liquid in " + i + "th recipe";
+                        var liquid = vc.getByName(cl, words[0]);
+                        if(liquid == null) throw "Invalid liquid: " + words[0] + " at " + j + "th output liquid in " + i + "th recipe";
+                        this._outputLiquidSet.add(liquid);
+                        this._liquidSet.add(liquid);
+                        if(isNaN(words[1])) throw "Invalid amount: " + words[1] + " at " + j + "th output liquid in " + i + "th recipe";
+                        realOutput.liquids[j] = new LiquidStack(liquid, words[1] * 1);
+                    };
+                };
+            };
+        };
+        if(!this.powerBarI) {
+            this.consumes.remove(ConsumeType.power);
+            this.hasPower = false;
+        };
+        this.consumesPower = this.powerBarI;
+        this.outputsPower = this.powerBarO;
+        this.super$init();
+        if(!this._outputLiquidSet.isEmpty()) this.outputsLiquid = true;
+        this.timers += 2;
+        if(!Vars.headless) this.infoStyle = Core.scene.getStyle(Button.ButtonStyle);
+    };
+    this.setStats = function() {
+        this.super$setStats();
+        if(this.powerBarI) this.stats.remove(Stat.powerUse);
+        this.stats.remove(Stat.productionTime);
+        var customValue = method => new StatValue() {
+            display: method
         }
-        if (value == -1 || value == this.input.length) entity.saveCond(false);
-        entity.progress = 0;
-        entity.modifyToggle(value);
-    }
-}
+        this.stats.add(Stat.input, customValue(table => {
+            table.row();
+            var recLen = this.recs.length;
+            for(var i = 0; i < recLen; i++) {
+                var rec = this.recs[i];
+                var outputItems = rec.output.items,
+                    inputItems = rec.input.items;
+                var outputLiquids = rec.output.liquids,
+                    inputLiquids = rec.input.liquids;
+                var inputPower = rec.input.power,
+                    outputPower = rec.output.power;
+                table.table(this.infoStyle.up, part => {
+                    part.add("[accent]" + Stat.input.localized()).expandX().left().row();
+                    part.table(cons(row => {
+                        for(var l = 0, len = inputItems.length; l < len; l++) row.add(new ItemDisplay(inputItems[l].item, inputItems[l].amount, true)).padRight(5);
+                    })).left().row();
+                    part.table(cons(row => {
+                        for(var l = 0, len = inputLiquids.length; l < len; l++) row.add(new LiquidDisplay(inputLiquids[l].liquid, inputLiquids[l].amount, false));
+                    })).left().row();
+                    if(inputPower > 0) {
+                        part.table(cons(row => {
+                            row.add("[lightgray]" + Stat.powerUse.localized() + ":[]").padRight(4);
+                            (new NumberValue(this.recs[i].input.power * 60, StatUnit.powerSecond)).display(row);
+                        })).left().row();
+                    }
+                    part.add("[accent]" + Stat.output.localized()).left().row();
+                    part.table(cons(row => {
+                        for(var jj = 0, len = outputItems.length; jj < len; jj++) row.add(new ItemDisplay(outputItems[jj].item, outputItems[jj].amount, true)).padRight(5);
+                    })).left().row();
+                    part.table(cons(row => {
+                        for(var jj = 0, len = outputLiquids.length; jj < len; jj++) row.add(new LiquidDisplay(outputLiquids[jj].liquid, outputLiquids[jj].amount, false));
+                    })).left().row();
+                    if(outputPower > 0) {
+                        part.table(cons(row => {
+                            row.add("[lightgray]" + Stat.basePowerGeneration.localized() + ":[]").padRight(4);
+                            (new NumberValue(this.recs[i].output.power * 60, StatUnit.powerSecond)).display(row);
+                        })).left().row();
+                    }
+                    part.table(cons(row => {
+                        row.add("[lightgray]" + Stat.productionTime.localized() + ":[]").padRight(4);
+                        (new NumberValue(rec.craftTime / 60, StatUnit.seconds)).display(row);
+                    })).left().row();
+                    if(typeof this["customDisplay"] === "function") this.customDisplay(part, i);
+                }).color(Pal.accent).left().growX();
+                table.add().size(18).row();
+            };
+        }));
+    };
+    this.setBars = function() {
+        this.super$setBars();
+        //initialize
+        this.bars.remove("liquid");
+        this.bars.remove("items");
+        if(!this.powerBarI) this.bars.remove("power");
+        if(this.powerBarO) this.bars.add("poweroutput", entity => new Bar(() => Core.bundle.format("bar.poweroutput", entity.getPowerProduction() * 60 * entity.timeScale), () => Pal.powerBar, () => typeof entity["getPowerStat"] === "function" ? entity.getPowerStat() : 0));
+        //display every Liquids that can contain
+        var i = 0;
+        if(!this._liquidSet.isEmpty()) {
+            this._liquidSet.each(k => {
+                this.bars.add("liquid" + i, entity => new Bar(() => k.localizedName, () => k.barColor == null ? k.color : k.barColor, () => entity.liquids.get(k) / this.liquidCapacity));
+                i++;
+            });
+        };
+    };
+    this.outputsItems = function() {
+        return this.hasOutputItem;
+    };
+    this.saveConfig = true;
+};
 module.exports = {
-    body: _body,
-}
+    MultiCrafter(Type, name, recipes, def, ExtraEntityDef) {
+        const block = new MultiCrafterBlock();
+        Object.assign(block, def);
+        const multi = extendContent(Type, name, block);
+        multi.buildType = () => extendContent(GenericCrafter.GenericCrafterBuild, multi, Object.assign(new MultiCrafterBuild(), new ExtraEntityDef()));
+        multi.consumes.add(extend(ConsumePower, {
+            requestedPower(entity) {
+                if(typeof entity["getToggle"] !== "function") return 0;
+                var i = entity.getToggle();
+                if(i < 0) return 0;
+                var input = entity.block.getRecipes()[i].input.power;
+                if(input > 0 && entity.getCond()) return input;
+                return 0;
+            }
+        }));
+        multi.configurable = true;
+        multi.hasItems = true;
+        multi.hasLiquids = true;
+        multi.hasPower = true;
+        multi.tmpRecs = recipes;
+        return multi;
+    }
+};
