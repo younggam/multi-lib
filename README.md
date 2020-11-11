@@ -15,7 +15,7 @@ you must add ```dependencies:["multi-lib"]``` in mod.json in your mode
 
 example code
 ```
-const multiLib=require("multi-lib2/wrapper");
+const multiLib=require("multi-lib/library");
 //you can use GenericSmelter instead GenericCrafter
 //also GenericSmelter.SmelterBuild instead GenericCrafter.GenericCrafterBuild
 //                                             ▼this has to be same with .json file name
