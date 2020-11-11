@@ -42,7 +42,6 @@ public class MultiCrafter extends GenericSmelter{
     public MultiCrafter(String name, Recipe[] recs){
         super(name);
         this.recs = recs;
-        this.dumpToggle = dumpToggle;
         configurable = true;
         hasItems = true;
         hasLiquids = true;
