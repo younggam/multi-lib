@@ -34,12 +34,12 @@ public class MultiCrafter extends GenericSmelter{
     public final ObjectSet<Item> inputItemSet = new ObjectSet<>(), outputItemSet = new ObjectSet<>();;
     public final ObjectSet<Liquid> inputLiquidSet = new ObjectSet<>(), outputLiquidSet = new ObjectSet<>(),
     liquidSet = new ObjectSet<>();
-    public final boolean dumpToggle;
-    private boolean powerBarI, powerBarO, hasOutputItem, isSmelter;
+    protected boolean dumpToggle, isSmelter;
+    private boolean powerBarI, powerBarO, hasOutputItem;
     private final MultiCrafterBlockInventoryFragment invFrag = new MultiCrafterBlockInventoryFragment();
     private int index = 0;
 
-    public MultiCrafter(String name, Recipe[] recs, boolean dumpToggle){
+    public MultiCrafter(String name, Recipe[] recs){
         super(name);
         this.recs = recs;
         this.dumpToggle = dumpToggle;
@@ -73,14 +73,6 @@ public class MultiCrafter extends GenericSmelter{
             tile.progress = 0;
             tile.toggle = value;
         });
-    }
-
-    public MultiCrafter(String name, int recLen, boolean dumpToggle){
-        this(name, new Recipe[recLen], dumpToggle);
-    }
-
-    public MultiCrafter(String name, Recipe[] recs){
-        this(name, recs, false);
     }
 
     public MultiCrafter(String name, int recLen){
