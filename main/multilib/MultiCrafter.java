@@ -18,7 +18,7 @@ import mindustry.ctype.ContentType;
 import mindustry.type.*;
 import mindustry.world.meta.*;
 import mindustry.world.meta.values.*;
-import mindustry.world.blocks.production.GenericCrafter;
+import mindustry.world.blocks.production.GenericSmelter;
 import mindustry.world.consumers.ConsumePower;
 import mindustry.world.modules.*;
 import mindustry.ui.*;
@@ -28,14 +28,14 @@ import multilib.Recipe.*;
 import static arc.Core.*;
 import static mindustry.Vars.*;
 
-public class MultiCrafter extends GenericCrafter{
+public class MultiCrafter extends GenericSmelter{
     public final Recipe[] recs;
-    private ButtonStyle infoStyle = null;
+    private ButtonStyle infoStyle;
     public final ObjectSet<Item> inputItemSet = new ObjectSet<>(), outputItemSet = new ObjectSet<>();;
     public final ObjectSet<Liquid> inputLiquidSet = new ObjectSet<>(), outputLiquidSet = new ObjectSet<>(),
     liquidSet = new ObjectSet<>();
     public final boolean dumpToggle;
-    private boolean powerBarI = false, powerBarO = false, hasOutputItem = false;
+    private boolean powerBarI, powerBarO, hasOutputItem, isSmelter;
     private final MultiCrafterBlockInventoryFragment invFrag = new MultiCrafterBlockInventoryFragment();
     private int index = 0;
 
@@ -219,7 +219,7 @@ public class MultiCrafter extends GenericCrafter{
 
     }
 
-    public class MultiCrafterBuild extends GenericCrafterBuild{
+    public class MultiCrafterBuild extends SmelterBuild{
         protected int toggle = 0, dumpItemEntry = 0, itemHas = 0;
         protected float[] progressArr = new float[recs.length];
         protected boolean cond = false, condValid = false;
@@ -428,6 +428,12 @@ public class MultiCrafter extends GenericCrafter{
 
         public void multiCrafterUpdate(){
 
+        }
+
+        @Override
+        public void draw(){
+            if(isSmelter) super.draw();
+            else drawer.draw(this);
         }
 
         @Override
