@@ -26,6 +26,6 @@ jobs:
       run: chmod +x gradlew; ./gradlew deploy
     - name: Upload built jar file
       uses: actions/upload-artifact@v2
-    with:
+      with:
         name: ${{ env.REPOSITORY_NAME }}
         path: build/libs/${{ env.REPOSITORY_NAME }}.jar
