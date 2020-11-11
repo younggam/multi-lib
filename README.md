@@ -22,4 +22,4 @@ ScreenShots
 ![제목 없음41](https://user-images.githubusercontent.com/61054554/78659511-9ed8e280-7906-11ea-901e-ab6195aa2355.png)
 ![제목 없음40](https://user-images.githubusercontent.com/61054554/78659515-a13b3c80-7906-11ea-844c-7ef07ac00f82.png)
 ![제목 없음39](https://user-images.githubusercontent.com/61054554/78659519-a3050000-7906-11ea-837f-d07777082424.png)
-![제목 없음38](https://user-images.githubusercontent.com/61054554/78659526-a4cec380-7906-11ea-881a-d8fd8b57f6af.png)
+![제목 없음234](https://user-images.githubusercontent.com/61054554/98801794-adb3e480-2455-11eb-9365-84386b4c8c26.png)
