@@ -1,6 +1,12 @@
 name: Java CI
 
-on: [push]
+on:
+    push:
+        branches:
+            - java
+    pull_request:
+        branches:
+            - java
 
 jobs:
   buildJar:
@@ -19,7 +25,7 @@ jobs:
     - name: Build mod jar
       run: chmod +x gradlew; ./gradlew deploy
     - name: Upload built jar file
-      uses: actions/upload-artifact@v2
-      with:
+    uses: actions/upload-artifact@v2
+    with:
         name: ${{ env.REPOSITORY_NAME }}
-        path: build/libs/multi-lib.jar
+        path: build/libs/${{ env.REPOSITORY_NAME }}.jar
