@@ -58,7 +58,7 @@ if you use
 import static mindustry.type.ItemStack.*;
 use with(item,amount,item,amount... ) instead new ItemStack[]{}
 there is no alternative for new LiquidStack[]{} but you can omit. Check Recipe.java to know which is omitable.
-    
+
 craftTime : literally craftTime based on 60 ticks per a second.
 ```
 
@@ -73,14 +73,15 @@ multi = new MultiCrafter("multi-test-2", 4){{
 	    new OutputContents(), 12f
 	);
     addRecipe(
-    	new InputContents(with(Items.coal, 1, Items.sand, 1)),
-    	new OutputContents(with(Items.thorium, 1, Items.surgeAlloy, 2), 10), 60f);
+		new InputContents(with(Items.coal, 1, Items.sand, 1), new LiquidStack[]{new LiquidStack(Liquids.water, 5)}, 1),
+	    new OutputContents(new LiquidStack[]{new LiquidStack(Liquids.slag, 5)}), 60f
+	);
     addRecipe(
     	new InputContents(with(Items.pyratite, 1, Items.blastCompound, 1)),
     	new OutputContents(with(Items.scrap, 1, Items.plastanium, 2, Items.sporePod, 2)), 72f);
     addRecipe(
     	new InputContents(with(Items.sand, 1), 15),
-    	new OutputContents(with(Items.silicon, 1), 10), 30);
+    	new OutputContents(with(Items.silicon, 1), 10), 30f);
 }};
 ```
 
