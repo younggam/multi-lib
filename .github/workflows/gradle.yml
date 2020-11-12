@@ -22,7 +22,7 @@ jobs:
         java-version: 14
     - name: Build mod jar
       run: |
-        echo "::debug::$REPOSITORY_NAME"
+        echo "::debug::${{ REPOSITORY_NAME }}"
         chmod +x gradlew
         ./gradlew jar
     - name: Upload built jar file
