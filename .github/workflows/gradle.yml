@@ -21,9 +21,12 @@ jobs:
       with:
         java-version: 14
     - name: Build mod jar
-      run: chmod +x gradlew; ./gradlew jar
+      run: |
+        echo "::debug::$REPOSITORY_NAME"
+        chmod +x gradlew
+        ./gradlew jar
     - name: Upload built jar file
       uses: actions/upload-artifact@v2
       with:
-        name: ${{ REPOSITORY_NAME }}
-        path: build/libs/${{ REPOSITORY_NAME }}-java.jar
+        name: ${{ env.REPOSITORY_NAME }}
+        path: build/libs/${{ env.REPOSITORY_NAME }}-java.jar
