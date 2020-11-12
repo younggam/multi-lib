@@ -17,14 +17,14 @@ jobs:
     - name: Set up repo name
       uses: allenevans/set-env@v2.0.0
       with:
-        repository name: "temp"
+        repository name: "$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}')"
     - name: Set up JDK 14
       uses: actions/setup-java@v1
       with:
         java-version: 14
     - name: Build mod jar
       run: |
-        echo "${env.REPOSITORY_NAME}=$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}')"
+    #    echo "${env.REPOSITORY_NAME}="
         chmod +x gradlew
         ./gradlew jar
     - name: Upload built jar file
