@@ -20,7 +20,7 @@ const multiLib=require("multi-lib/library");
 //also GenericSmelter.SmelterBuild instead GenericCrafter.GenericCrafterBuild
 //                                                                           ▼this has to be same with .json file name
 //
-const multi=multiLib.extend(GenericCrafter,GenericCrafter.GenericCrafterBuild,"multi",[
+const multi=multiLib.MultiCrafter(GenericCrafter,GenericCrafter.GenericCrafterBuild,"multi",[
     /*default form for each recipes. You can change values.
     {
         input:{
