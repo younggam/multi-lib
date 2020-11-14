@@ -7,11 +7,6 @@ sourceCompatibility = 1.8
 
 sourceSets.main.java.srcDirs = ["main"]
 
-repositories{
-    mavenCentral()
-    maven{ url 'https://www.jitpack.io' }
-}
-
 ext{
     //the build number that this mod is made for
     mindustryVersion = 'v113.2'
@@ -27,6 +22,11 @@ allprojects{
         if(JavaVersion.current() != JavaVersion.VERSION_1_8){
             options.compilerArgs.addAll(['--release', '8'])
         }
+    }
+    repositories{
+        jcenter()
+        mavenCentral()
+        maven{ url 'https://www.jitpack.io' }
     }
 }
 
