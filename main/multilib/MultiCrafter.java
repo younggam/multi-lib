@@ -377,7 +377,9 @@ public class MultiCrafter extends GenericSmelter{
             for(int i = 0, len = inputItems.length; i < len; i++) items.remove(inputItems[i]);
             for(int i = 0, len = inputLiquids.length; i < len; i++) liquids.remove(inputLiquids[i].liquid, inputLiquids[i].amount);
             for(int i = 0, len = outputItems.length; i < len; i++){
-                for(int j = 0, amount = outputItems[i].amount; j < amount; j++) offload(outputItems[j].item);
+                int amount = outputItems[i].amount;
+                Item temp = outputItems[i].item;
+                for(int j = 0; j < amount; j++) offload(temp);
             }
             for(int i = 0, len = outputLiquids.length; i < len; i++) liquids.add(outputLiquids[i].liquid, outputLiquids[i].amount);
             craftEffect.at(x, y);
