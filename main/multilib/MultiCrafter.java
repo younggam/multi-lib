@@ -34,7 +34,7 @@ public class MultiCrafter extends GenericSmelter{
     public final ObjectSet<Item> inputItemSet = new ObjectSet<>(), outputItemSet = new ObjectSet<>();;
     public final ObjectSet<Liquid> inputLiquidSet = new ObjectSet<>(), outputLiquidSet = new ObjectSet<>(),
     liquidSet = new ObjectSet<>();
-    protected boolean dumpToggle, isSmelter;
+    public boolean dumpToggle, isSmelter;
     private boolean powerBarI, powerBarO, hasOutputItem;
     private final MultiCrafterBlockInventoryFragment invFrag = new MultiCrafterBlockInventoryFragment();
     private int index = 0;
