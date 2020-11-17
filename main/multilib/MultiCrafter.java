@@ -251,36 +251,34 @@ public class MultiCrafter extends GenericSmelter{
             for(int i = 0; i < recLen; i++){
                 ItemStack[] itemStacks = recs[i].input.items;
                 LiquidStack[] liquidStacks = recs[i].input.liquids;
-                if(Arrays.stream(recs[i].output.items).allMatch(stack -> stack.item.unlockedNow()) && Arrays.stream(recs[i].output.liquids).allMatch(stack -> stack.liquid.unlockedNow())){
-                    for(int j = 0, len = itemStacks.length; j < len; j++){
-                        ItemStack stack = itemStacks[j];
-                        table.add(new ReqImage(new ItemImage(stack.item.icon(Cicon.medium), stack.amount), () -> items != null && items.has(stack.item, stack.amount))).size(8 * 4);//.padRight(8);
-                    }
-                    z += itemStacks.length;
-                    for(int j = 0, len = liquidStacks.length; j < len; j++){
-                        LiquidStack stack = liquidStacks[j];
-                        table.add(new ReqImage(stack.liquid.icon(Cicon.medium), () -> liquids != null && liquids.get(stack.liquid) > stack.amount)).size(8 * 4);
-                    }
-                    z += liquidStacks.length;
-                    if(z == 0){
-                        table.image(Icon.cancel).size(8f * 4f);
-                        x += 1;
-                    }
-                    if(i < recLen - 1){
-                        InputContents next = recs[i + 1].input;
-                        y += next.items.length + next.liquids.length;
-                        x += z;
-                        if((x + y <= 8 && y != 0) || (x + y <= 7 && y == 0)){
-                            table.image(Icon.pause).size(8f * 4f);
-                            x += 1;
-                        }else{
-                            table.row();
-                            x = 0;
-                        }
-                    }
-                    y = 0;
-                    z = 0;
+                for(int j = 0, len = itemStacks.length; j < len; j++){
+                    ItemStack stack = itemStacks[j];
+                    table.add(new ReqImage(new ItemImage(stack.item.icon(Cicon.medium), stack.amount), () -> items != null && items.has(stack.item, stack.amount))).size(8 * 4);//.padRight(8);
                 }
+                z += itemStacks.length;
+                for(int j = 0, len = liquidStacks.length; j < len; j++){
+                    LiquidStack stack = liquidStacks[j];
+                    table.add(new ReqImage(stack.liquid.icon(Cicon.medium), () -> liquids != null && liquids.get(stack.liquid) > stack.amount)).size(8 * 4);
+                }
+                z += liquidStacks.length;
+                if(z == 0){
+                    table.image(Icon.cancel).size(8f * 4f);
+                    x += 1;
+                }
+                if(i < recLen - 1){
+                    InputContents next = recs[i + 1].input;
+                    y += next.items.length + next.liquids.length;
+                    x += z;
+                    if((x + y <= 8 && y != 0) || (x + y <= 7 && y == 0)){
+                        table.image(Icon.pause).size(8f * 4f);
+                        x += 1;
+                    }else{
+                        table.row();
+                        x = 0;
+                    }
+                }
+                y = 0;
+                z = 0;
             }
         }
 
@@ -461,14 +459,10 @@ public class MultiCrafter extends GenericSmelter{
             group.setMinCheckCount(0);
             group.setMaxCheckCount(1);
             int recLen = recs.length;
-            boolean[] exit = new boolean[recLen];
 
             for(int i = 0; i < recLen; i++){
                 int ii = i;
                 OutputContents output = recs[i].output;
-                exit[i] = !(Arrays.stream(output.items).allMatch(stack -> stack.item.unlockedNow())
-                && Arrays.stream(output.liquids).allMatch(stack -> stack.liquid.unlockedNow()));
-                if(exit[i]) continue;
                 ImageButton button = (ImageButton) table.button(Tex.whiteui, Styles.clearToggleTransi, 40, () -> {}).group(group).get();
 
                 button.clicked(() -> configure(button.isChecked() ? ii : -1));
@@ -497,7 +491,6 @@ public class MultiCrafter extends GenericSmelter{
             }
             for(int i = 0; i < max; i++){
                 for(int j = 0; j < recLen; j++){
-                    if(exit[j]) continue;
                     OutputContents output = recs[j].output;
                     int outputItemLen = output.items.length;
                     int outputLiquidLen = output.liquids.length;

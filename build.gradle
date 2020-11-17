@@ -9,7 +9,7 @@ sourceSets.main.java.srcDirs = ["main"]
 
 ext{
     //the build number that this mod is made for
-    mindustryVersion = 'v113.2'
+    mindustryVersion = 'v114.1'
     doExec = { cmd ->
         def proc = cmd.execute(null, new File("$buildDir/libs"))
         proc.waitForProcessOutput(System.out, System.err)
