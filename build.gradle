@@ -6,10 +6,11 @@ version '1.0'
 sourceCompatibility = 1.8
 
 sourceSets.main.java.srcDirs = ["main"]
+sourceSets.test.java.srcDirs = ["bin/default"]
 
 ext{
     //the build number that this mod is made for
-    mindustryVersion = 'v114.1'
+    mindustryVersion = 'v114.2'
     doExec = { cmd ->
         def proc = cmd.execute(null, new File("$buildDir/libs"))
         proc.waitForProcessOutput(System.out, System.err)
@@ -41,4 +42,13 @@ jar{
     from{
         configurations.runtimeClasspath.collect{ it.isDirectory() ? it : zipTree(it) }
     }
+}
+task tester(type: Jar){
+	archiveFileName = "${project.archivesBaseName}-tester.jar"
+	from{
+		sourceSets.test.java.srcDirs
+	}
+	from("test/"){
+		include "mod.hjson"
+	}
 }

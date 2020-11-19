@@ -21,9 +21,9 @@ import mindustry.world.meta.values.*;
 import mindustry.world.blocks.production.GenericSmelter;
 import mindustry.world.consumers.ConsumePower;
 import mindustry.world.modules.*;
+import multilib.Recipe.*;
 import mindustry.ui.*;
 import mindustry.ui.fragments.BlockInventoryFragment;
-import multilib.Recipe.*;
 
 import static arc.Core.*;
 import static mindustry.Vars.*;
@@ -187,7 +187,7 @@ public class MultiCrafter extends GenericSmelter{
         super.setBars();
         bars.remove("liquid");
         bars.remove("items");
-        if(!powerBarI) bars.remove("power");
+        if(!powerBarI && hasPower) bars.remove("power");
         if(powerBarO) bars.add("poweroutput",
         (MultiCrafterBuild entity) -> new Bar(
         () -> bundle.format("bar.poweroutput",
@@ -332,7 +332,7 @@ public class MultiCrafter extends GenericSmelter{
 
         protected boolean checkCond(){
             if(toggle < 0) return false;
-            if(power.status <= 0 && recs[toggle].input.power > 0){
+            if(recs[toggle].input.power > 0 && power.status <= 0){
                 condValid = false;
                 cond = false;
                 return false;
@@ -425,6 +425,11 @@ public class MultiCrafter extends GenericSmelter{
         public void draw(){
             if(isSmelter) super.draw();
             else drawer.draw(this);
+        }
+
+        @Override
+        public void drawLight(){
+            if(isSmelter) super.drawLight();
         }
 
         @Override
@@ -527,8 +532,8 @@ public class MultiCrafter extends GenericSmelter{
         @Override
         public void created(){
             cons = new MultiCrafterConsumeModule(self());
-            items = new MultiCrafterItemModule();
-            liquids = new MultiCrafterLiquidModule();
+            if(hasItems) items = new MultiCrafterItemModule();
+            if(hasLiquids) liquids = new MultiCrafterLiquidModule();
         }
 
         @Override

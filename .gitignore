@@ -3,7 +3,8 @@
 build/
 
 
-# idk
+# normal
+test/
 
 # eclipse
 bin/
