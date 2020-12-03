@@ -1,6 +1,5 @@
 package multilib;
 
-import java.util.Arrays;
 import arc.util.*;
 import arc.util.io.*;
 import arc.struct.*;
@@ -447,7 +446,7 @@ public class MultiCrafter extends GenericSmelter{
             float pos = input.mouseScreen(x, y - size * 4 - 1).y;
             Vec2 relative = input.mouseScreen(x, y + size * 4);
 
-            table.setPosition(relative.x, Math.min(pos, (float) (relative.y - Math.ceil((float) itemHas / 3f) * 48f - 4f)), Align.top);
+            table.setPosition(relative.x, Math.min(pos, (float)(relative.y - Math.ceil((float)itemHas / 3f) * 48f - 4f)), Align.top);
             if(!invFrag.isShown() && control.input.frag.config.getSelectedTile() == this && items.any()) invFrag.showFor(this);
         }
 
@@ -468,7 +467,7 @@ public class MultiCrafter extends GenericSmelter{
             for(int i = 0; i < recLen; i++){
                 int ii = i;
                 OutputContents output = recs[i].output;
-                ImageButton button = (ImageButton) table.button(Tex.whiteui, Styles.clearToggleTransi, 40, () -> {}).group(group).get();
+                ImageButton button = (ImageButton)table.button(Tex.whiteui, Styles.clearToggleTransi, 40, () -> {}).group(group).get();
 
                 button.clicked(() -> configure(button.isChecked() ? ii : -1));
                 TextureRegion icon = output.items.length > 0 ? output.items[0].item.icon(Cicon.small) : output.liquids.length > 0 ? output.liquids[0].liquid.icon(Cicon.small) : region;
@@ -522,11 +521,11 @@ public class MultiCrafter extends GenericSmelter{
         }
 
         protected boolean decideItemSet(Item item){
-            return dumpToggle ? toggle > -1 && Arrays.stream(recs[toggle].output.items).anyMatch(i -> i.item == item) : outputItemSet.contains(item);
+            return dumpToggle ? toggle > -1 && Structs.contains(recs[toggle].output.items, i -> i.item == item) : outputItemSet.contains(item);
         }
 
         protected boolean decideLiquidSet(Liquid liquid){
-            return dumpToggle ? toggle > -1 && Arrays.stream(recs[toggle].output.liquids).anyMatch(i -> i.liquid == liquid) : outputLiquidSet.contains(liquid);
+            return dumpToggle ? toggle > -1 && Structs.contains(recs[toggle].output.liquids, i -> i.liquid == liquid) : outputLiquidSet.contains(liquid);
         }
 
         @Override
@@ -546,11 +545,11 @@ public class MultiCrafter extends GenericSmelter{
             super.write(write);
             write.s(toggle);
             Seq<Item> queItem = toOutputItemSet.orderedItems();
-            short lenI = (short) queItem.size;
+            short lenI = (short)queItem.size;
             write.s(lenI);
             for(short i = 0; i < lenI; i++) write.s(queItem.get(i).id);
             Seq<Liquid> queLiquid = toOutputLiquidSet.orderedItems();
-            short lenL = (short) queLiquid.size;
+            short lenL = (short)queLiquid.size;
             write.s(lenL);
             for(short i = 0; i < lenL; i++) write.s(queLiquid.get(i).id);
         }
