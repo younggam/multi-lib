@@ -10,10 +10,12 @@ import arc.scene.ui.layout.*;
 import arc.scene.ui.Button.*;
 import arc.math.*;
 import arc.math.geom.*;
+import arc.func.Cons;
 import arc.graphics.g2d.TextureRegion;
 import mindustry.graphics.Pal;
 import mindustry.gen.*;
 import mindustry.ctype.ContentType;
+import mindustry.ctype.UnlockableContent;
 import mindustry.type.*;
 import mindustry.world.meta.*;
 import mindustry.world.meta.values.*;
@@ -79,6 +81,15 @@ public class MultiCrafter extends GenericSmelter{
 
     public void addRecipe(InputContents input, OutputContents output, float craftTime){
         recs[index++] = new Recipe(input, output, craftTime);
+    }
+
+    @Override
+    public void getDependencies(Cons<UnlockableContent> cons){
+        for(ItemStack stack : requirements) cons.get(stack.item);
+        Structs.each(rec -> {
+            for(ItemStack stack : rec.input.items) cons.get(stack.item);
+            for(LiquidStack stack : rec.input.liquids) cons.get(stack.liquid);
+        }, recs);
     }
 
     @Override
