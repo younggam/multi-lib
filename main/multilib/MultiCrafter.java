@@ -31,14 +31,15 @@ import static mindustry.Vars.*;
 
 public class MultiCrafter extends GenericSmelter{
     public final Recipe[] recs;
-    private ButtonStyle infoStyle;
     public final ObjectSet<Item> inputItemSet = new ObjectSet<>(), outputItemSet = new ObjectSet<>();;
     public final ObjectSet<Liquid> inputLiquidSet = new ObjectSet<>(), outputLiquidSet = new ObjectSet<>(),
     liquidSet = new ObjectSet<>();
     public boolean dumpToggle, isSmelter;
-    private boolean powerBarI, powerBarO, hasOutputItem;
+    private final Seq<InputContents> needUnlocked = new Seq<>();
     private final MultiCrafterBlockInventoryFragment invFrag = new MultiCrafterBlockInventoryFragment();
+    private boolean powerBarI, powerBarO, hasOutputItem;
     private int index = 0;
+    private ButtonStyle infoStyle;
 
     public MultiCrafter(String name, Recipe[] recs){
         super(name);
@@ -79,17 +80,22 @@ public class MultiCrafter extends GenericSmelter{
         this(name, new Recipe[recLen]);
     }
 
-    public void addRecipe(InputContents input, OutputContents output, float craftTime){
+    public void addRecipe(InputContents input, OutputContents output, float craftTime, boolean needUnlocked){
         recs[index++] = new Recipe(input, output, craftTime);
+        if(needUnlocked) this.needUnlocked.add(input);
+    }
+
+    public void addRecipe(InputContents input, OutputContents output, float craftTime){
+        addRecipe(input, output, craftTime, false);
     }
 
     @Override
     public void getDependencies(Cons<UnlockableContent> cons){
         for(ItemStack stack : requirements) cons.get(stack.item);
-        Structs.each(rec -> {
-            for(ItemStack stack : rec.input.items) cons.get(stack.item);
-            for(LiquidStack stack : rec.input.liquids) cons.get(stack.liquid);
-        }, recs);
+        needUnlocked.each(input -> {
+            for(ItemStack stack : input.items) cons.get(stack.item);
+            for(LiquidStack stack : input.liquids) cons.get(stack.liquid);
+        });
     }
 
     @Override

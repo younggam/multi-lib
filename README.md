@@ -50,9 +50,12 @@ isSmelter : if true, uses smelter as base. (only drawing changed)
 ```
 method that adds recipe
 ```
-addRecipe(InputContents input, new OutputContents output, float craftTime)
+addRecipe(InputContents input, new OutputContents output, float craftTime, boolean needUnlocked)
 input : new InputContents(ItemStack[] items, LiquidStack[] liquids, float power)
 output : new OutputContents(ItemStack[] items, LiquidStack[] liquids, float power)
+needUnlocked : if true, items and liquids of corresponding recipe should be unlocked before research crafter.
+addRecipe(InputContents input, new OutputContents output, float craftTime)
+same as above but needUnlocked is false.
 
 if you use
 import static mindustry.type.ItemStack.*;
@@ -70,7 +73,7 @@ multi = new MultiCrafter("multi-test-2", 4){{
 	size = 3;
 	addRecipe(
 	    new InputContents(with(Items.sand, 1, Items.lead, 1)),
-	    new OutputContents(), 12f
+	    new OutputContents(), 12f, true
 	);
     addRecipe(
 		new InputContents(with(Items.coal, 1, Items.sand, 1), new LiquidStack[]{new LiquidStack(Liquids.water, 5)}, 1),
@@ -81,7 +84,7 @@ multi = new MultiCrafter("multi-test-2", 4){{
     	new OutputContents(with(Items.scrap, 1, Items.plastanium, 2, Items.sporePod, 2)), 72f);
     addRecipe(
     	new InputContents(with(Items.sand, 1), 15),
-    	new OutputContents(with(Items.silicon, 1), 10), 30f);
+    	new OutputContents(with(Items.silicon, 1), 10), 30f, true);
 }};
 ```
 
