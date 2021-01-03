@@ -9,6 +9,10 @@ What you can do with this library
 4. Crafter can act as power generator according to recipe settings
 5. Extensible block and entity function
 
+# notice
+I serve militery because of korean duty. This mod won't be updated well.
+As crafter-related things aren't change much in mindustry, this mod won't be oudated fastly
+
 How to use
 ----------
 you must add ```dependencies:["multi-lib"]``` in mod.json in your mode
