@@ -4,6 +4,9 @@ Mindustry library mode that contains multicrafter scripts
 
 currently outdated. replace multi-lib to multi-lib2.
 
+# notice
+I serve militery because of korean duty. This mod won't be updated well.
+As crafter-related things aren't change much in mindustry, this mod won't be oudated fastly
 
 How to use
 ----------
