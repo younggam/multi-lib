@@ -6,6 +6,10 @@ What is difference?
 2. optimized = increased performance
 3. real inventory shown
 
+# notice
+I serve militery because of korean duty. This mod won't be updated well.
+As crafter-related things aren't change much in mindustry, this mod won't be oudated fastly
+
 How to use
 ----------
 see instructions in
