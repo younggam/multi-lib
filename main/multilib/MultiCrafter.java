@@ -35,11 +35,11 @@ public class MultiCrafter extends GenericSmelter{
     public final ObjectSet<Liquid> inputLiquidSet = new ObjectSet<>(), outputLiquidSet = new ObjectSet<>(),
     liquidSet = new ObjectSet<>();
     public boolean dumpToggle, isSmelter;
-    private final Seq<InputContents> needUnlocked = new Seq<>();
-    private final MultiCrafterBlockInventoryFragment invFrag = new MultiCrafterBlockInventoryFragment();
-    private boolean powerBarI, powerBarO, hasOutputItem;
-    private int index = 0;
-    private ButtonStyle infoStyle;
+    protected final Seq<InputContents> needUnlocked = new Seq<>();
+    protected final MultiCrafterBlockInventoryFragment invFrag = new MultiCrafterBlockInventoryFragment();
+    protected boolean powerBarI, powerBarO, hasOutputItem;
+    protected int index = 0;
+    protected ButtonStyle infoStyle;
 
     public MultiCrafter(String name, Recipe[] recs){
         super(name);
@@ -583,7 +583,7 @@ public class MultiCrafter extends GenericSmelter{
             for(short i = 0; i < lenL; i++) toOutputLiquidSet.add(content.getByID(ContentType.liquid, read.s()));
         }
 
-        class MultiCrafterItemModule extends ItemModule{
+        public class MultiCrafterItemModule extends ItemModule{
             @Override
             public Item take(){
                 for(int i = 0; i < items.length; i++){
@@ -667,7 +667,7 @@ public class MultiCrafter extends GenericSmelter{
             }
         }
 
-        class MultiCrafterConsumeModule extends ConsumeModule{
+        public class MultiCrafterConsumeModule extends ConsumeModule{
             public MultiCrafterConsumeModule(Building entity){
                 super(entity);
             }
@@ -680,7 +680,7 @@ public class MultiCrafter extends GenericSmelter{
         }
     }
 
-    class MultiCrafterConsumePower extends ConsumePower{
+    public class MultiCrafterConsumePower extends ConsumePower{
         public float requestedPower(MultiCrafterBuild entity){
             if(entity.tile().build == null) return 0;
             int i = entity.getToggle();
@@ -691,9 +691,9 @@ public class MultiCrafter extends GenericSmelter{
         }
     }
 
-    class MultiCrafterBlockInventoryFragment extends BlockInventoryFragment{
-        private boolean built = false;
-        private boolean visible = false;
+    public class MultiCrafterBlockInventoryFragment extends BlockInventoryFragment{
+        protected boolean built = false;
+        protected boolean visible = false;
 
         public boolean isBuilt(){
             return built;
