@@ -464,7 +464,7 @@ public class MultiCrafter extends GenericSmelter{
             Vec2 relative = input.mouseScreen(x, y + size * 4);
 
             table.setPosition(relative.x, Math.min(pos, (float)(relative.y - Math.ceil((float)itemHas / 3f) * 48f - 4f)), Align.top);
-            if(!invFrag.isShown() && control.input.frag.config.getSelectedTile() == this && items.any()) invFrag.showFor(this);
+            if(!invFrag.isShown() && control.input.frag.config.getSelectedTile() == self() && items.any()) invFrag.showFor(this);
         }
 
         @Override
