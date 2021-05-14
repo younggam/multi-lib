@@ -681,13 +681,20 @@ public class MultiCrafter extends GenericSmelter{
     }
 
     class MultiCrafterConsumePower extends ConsumePower{
-        public float requestedPower(MultiCrafterBuild entity){
-            if(entity.tile().build == null) return 0;
-            int i = entity.getToggle();
-            if(i < 0) return 0;
-            float input = recs[i].input.power;
-            if(input > 0 && entity.getCond()) return input;
-            return 0;
+        @Override
+        public float requestedPower(Building entity){
+            if(entity instanceof MultiCrafterBuild){
+                MultiCrafterBuild e = (MultiCrafterBuild)entity;
+                
+                if(entity.tile().build == null) return 0f;
+                
+                int i = e.getToggle();
+                if(i < 0) return 0f;
+                
+                float input = recs[i].input.power;
+                if(input > 0 && e.getCond()) return input;
+            }
+            return 0f;
         }
     }
 
