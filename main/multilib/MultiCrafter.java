@@ -12,14 +12,14 @@ import arc.math.*;
 import arc.math.geom.*;
 import arc.func.Cons;
 import arc.graphics.g2d.TextureRegion;
+
 import mindustry.graphics.Pal;
 import mindustry.gen.*;
 import mindustry.ctype.ContentType;
 import mindustry.ctype.UnlockableContent;
 import mindustry.type.*;
 import mindustry.world.meta.*;
-import mindustry.world.meta.values.*;
-import mindustry.world.blocks.production.GenericSmelter;
+import mindustry.world.blocks.production.GenericCrafter;
 import mindustry.world.consumers.ConsumePower;
 import mindustry.world.modules.*;
 import multilib.Recipe.*;
@@ -29,11 +29,11 @@ import mindustry.ui.fragments.BlockInventoryFragment;
 import static arc.Core.*;
 import static mindustry.Vars.*;
 
-public class MultiCrafter extends GenericSmelter{
+public class MultiCrafter extends GenericCrafter{
     public final Recipe[] recs;
-    public final ObjectSet<Item> inputItemSet = new ObjectSet<>(), outputItemSet = new ObjectSet<>();;
+    public final ObjectSet<Item> inputItemSet = new ObjectSet<>(), outputItemSet = new ObjectSet<>();
     public final ObjectSet<Liquid> inputLiquidSet = new ObjectSet<>(), outputLiquidSet = new ObjectSet<>(),
-    liquidSet = new ObjectSet<>();
+        liquidSet = new ObjectSet<>();
     public boolean dumpToggle, isSmelter;
     private final Seq<InputContents> needUnlocked = new Seq<>();
     private final MultiCrafterBlockInventoryFragment invFrag = new MultiCrafterBlockInventoryFragment();
@@ -169,7 +169,7 @@ public class MultiCrafter extends GenericSmelter{
                     if(inputPower > 0f){
                         part.table(row -> {
                             row.add("[lightgray]" + Stat.powerUse.localized() + ":[]").padRight(4f);
-                            (new NumberValue(inputPower * 60f, StatUnit.powerSecond)).display(row);
+                            StatValues.number(inputPower * 60f, StatUnit.powerSecond);
                         }).left().row();
                     }
                     part.add("[accent]" + Stat.output.localized()).left().row();
@@ -184,12 +184,12 @@ public class MultiCrafter extends GenericSmelter{
                     if(outputPower > 0f){
                         part.table(row -> {
                             row.add("[lightgray]" + Stat.basePowerGeneration.localized() + ":[]").padRight(4f);
-                            (new NumberValue(outputPower * 60f, StatUnit.powerSecond)).display(row);
+                            StatValues.number(outputPower * 60f, StatUnit.powerSecond);
                         }).left().row();
                     }
                     part.table(row -> {
                         row.add("[lightgray]" + Stat.productionTime.localized() + ":[]").padRight(4f);
-                        (new NumberValue(rec.craftTime / 60f, StatUnit.seconds)).display(row);
+                        StatValues.number(rec.craftTime / 60f, StatUnit.seconds);
                     }).left().row();
                     multiCrafterDisplay(part, ii);
                 }).color(Pal.accent).left().growX();
@@ -204,15 +204,21 @@ public class MultiCrafter extends GenericSmelter{
         bars.remove("liquid");
         bars.remove("items");
         if(!powerBarI && hasPower) bars.remove("power");
-        if(powerBarO) bars.add("poweroutput",
-        (MultiCrafterBuild entity) -> new Bar(
-        () -> bundle.format("bar.poweroutput",
-        Strings.fixed(entity.getPowerProduction() * 60 * entity.timeScale(), 1)),
-        () -> Pal.powerBar, () -> entity.productionEfficiency));
+        if(powerBarO) bars.add(
+            "poweroutput",
+            (MultiCrafterBuild entity) -> new Bar(
+                () -> bundle.format(
+                    "bar.poweroutput",
+                    Strings.fixed(entity.getPowerProduction() * 60 * entity.timeScale(), 1)
+                ),
+                () -> Pal.powerBar, () -> entity.productionEfficiency
+            )
+        );
         if(!liquidSet.isEmpty()){
             liquidSet.each(k -> {
                 bars.add(k.localizedName, entity -> new Bar(() -> k.localizedName, () -> k.barColor(),
-                () -> entity.liquids.get(k) / liquidCapacity));
+                    () -> entity.liquids.get(k) / liquidCapacity
+                ));
             });
         }
     }
@@ -226,7 +232,7 @@ public class MultiCrafter extends GenericSmelter{
 
     }
 
-    public class MultiCrafterBuild extends SmelterBuild{
+    public class MultiCrafterBuild extends GenericCrafterBuild{
         protected int toggle = 0, dumpItemEntry = 0, itemHas = 0;
         protected float[] progressArr = new float[recs.length];
         protected boolean cond = false, condValid = false;
@@ -583,6 +589,7 @@ public class MultiCrafter extends GenericSmelter{
             for(short i = 0; i < lenL; i++) toOutputLiquidSet.add(content.getByID(ContentType.liquid, read.s()));
         }
 
+        //To consume items properly and some optimization. TODO less optimizing?
         class MultiCrafterItemModule extends ItemModule{
             @Override
             public Item take(){
@@ -599,12 +606,6 @@ public class MultiCrafter extends GenericSmelter{
                     }
                 }
                 return null;
-            }
-
-            @Override
-            public void endTake(Item item){
-                super.endTake(item);
-                if(items[item.id] <= 0 && decideItemSet(item)) toOutputItemSet.remove(item);
             }
 
             @Override
@@ -641,6 +642,7 @@ public class MultiCrafter extends GenericSmelter{
             }
         }
 
+        //To consume liquid properly and some optimization
         class MultiCrafterLiquidModule extends LiquidModule{
             @Override
             public void reset(Liquid liquid, float amount){
@@ -667,6 +669,7 @@ public class MultiCrafter extends GenericSmelter{
             }
         }
 
+        //To show proper status
         class MultiCrafterConsumeModule extends ConsumeModule{
             public MultiCrafterConsumeModule(Building entity){
                 super(entity);
@@ -680,17 +683,18 @@ public class MultiCrafter extends GenericSmelter{
         }
     }
 
+    //To use appropriate power
     class MultiCrafterConsumePower extends ConsumePower{
         @Override
         public float requestedPower(Building entity){
             if(entity instanceof MultiCrafterBuild){
                 MultiCrafterBuild e = (MultiCrafterBuild)entity;
-                
+
                 if(entity.tile().build == null) return 0f;
-                
+
                 int i = e.getToggle();
                 if(i < 0) return 0f;
-                
+
                 float input = recs[i].input.power;
                 if(input > 0 && e.getCond()) return input;
             }
@@ -698,6 +702,7 @@ public class MultiCrafter extends GenericSmelter{
         }
     }
 
+    //To handle double fragment showing.
     class MultiCrafterBlockInventoryFragment extends BlockInventoryFragment{
         private boolean built = false;
         private boolean visible = false;
